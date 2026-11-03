@@ -4,7 +4,7 @@ import json
 import time
 
 from talk2.answer_format import ANSWER_INSTRUCTIONS, parse_answer
-from talk2.harness_tools import LIST_FILES, READ, RECORD_NOTE, SEARCH, CorpusTools
+from talk2.harness_tools import LIST_FILES, READ, RECORD_NOTE, CorpusTools
 from talk2.model_client import chat
 
 TOOL_CALL_BUDGET = 20
@@ -77,12 +77,12 @@ def answer_question(question: dict, tools: CorpusTools, model: str, backend: str
         user_content += f"\n\nSuggested search terms by document language:\n{turn.content.strip()}"
 
     def system_message() -> dict:
-        content = SYSTEM_PROMPT
+        content = tools.system_prompt or SYSTEM_PROMPT
         if use_memory:
             content += MEMORY_PROMPT + "\n\nNotes:\n" + memory.render()
         return {"role": "system", "content": content}
 
-    tool_definitions = [SEARCH, READ, LIST_FILES] + ([RECORD_NOTE] if use_memory else [])
+    tool_definitions = [tools.search_definition, READ, LIST_FILES] + ([RECORD_NOTE] if use_memory else [])
     messages = [system_message(), {"role": "user", "content": user_content}]
     tool_calls_made = 0
     empty_replies = 0
@@ -116,8 +116,7 @@ def answer_question(question: dict, tools: CorpusTools, model: str, backend: str
                 parse_failures += 1
             try:
                 if call["name"] == "search":
-                    output = tools.search(**{k: v for k, v in arguments.items() if k in
-                                             ("pattern", "path_glob", "mode", "fixed_string", "ignore_case", "context")})
+                    output = tools.search(**{k: v for k, v in arguments.items() if k in tools.search_parameters})
                 elif call["name"] == "read":
                     output = tools.read(**{k: v for k, v in arguments.items() if k in ("path", "start_line", "line_count")})
                     files_touched.add(arguments.get("path", ""))

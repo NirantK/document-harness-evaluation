@@ -75,11 +75,16 @@ class HybridRetriever:
     """BM25 and embedding rankings over the same chunks, fused by reciprocal rank fusion; returns the top TOP_K."""
 
     def __init__(self, index):
+        self.index = index
         self.nodes = list(index.docstore.docs.values())
         self.vector_retriever = index.as_retriever(similarity_top_k=FUSION_CANDIDATES)
         self.keyword_index = bm25s.BM25()
         self.keyword_index.index(bm25s.tokenize([n.get_content() for n in self.nodes], stopwords="en",
                                                 show_progress=False), show_progress=False)
+
+    def index_for_all_nodes(self, count: int):
+        """An embedding retriever that ranks every chunk, so a path filter can still return five passages."""
+        return self.index.as_retriever(similarity_top_k=count)
 
     def retrieve(self, question: str) -> list[NodeWithScore]:
         positions, _ = self.keyword_index.retrieve(bm25s.tokenize([question], stopwords="en", show_progress=False),

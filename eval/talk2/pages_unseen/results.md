@@ -13,6 +13,8 @@
 | Grep, single fan-out | `merged_grep_fanout` | 5, 5, 4 | 2 | 6.6k |
 | Grep, single fan-out, thinking | `merged_grep_fanout_thinking` | 4, 4, 2 | 2 | 20.5k |
 | Grep, agentic search | `merged_grep` | 7, 9, 7 | 20 | 155.3k |
+| BM25 search in the grep agent loop | `merged_bm25_loop` | 9, 8, 10 | 13 | 125.5k |
+| Fusion search in the grep agent loop | `merged_fusion_loop` | 8, 9, 10 | 19.5 | 238.5k |
 | Trace Fixes | `merged_grep_revision2` | 7, 6, 7 | 13 | 138.2k |
 | Token Reduction | `merged_grep_revision3` | 8, 7, 8 | 13 | 98.1k |
 | Thinking | `merged_grep_revision3_thinking` | 11, 8, 8 | 11 | 94.5k |
@@ -23,7 +25,7 @@
 - All 20 questions come from XL-DocBench; 12 of the 20 validation questions do.
 - Token Reduction (`merged_grep_revision3`) was frozen under the tag `talk2-revision3-frozen` before its first run here. No run in this table replayed a saved reply.
 - A first Thinking run at a 4,096-token output limit scored 13. Thinking shares that limit, and it
-  left the fan-out with no search terms, so thinking runs moved to 16,384 tokens. Those are the scores above. Even at that limit, fan-out with thinking ended with no search terms on 5 to 7 of these 20 questions per run, and 2 to 5 of the validation 20, mostly with reasoning at the limit.
+  left the fan-out with no search terms, so thinking runs moved to 16,384 tokens. Those are the scores above. Even at that limit, fan-out with thinking ended with no search terms on 5 to 7 of these 20 questions per run, and 3 to 5 of the validation 20, mostly with reasoning at the limit.
 - Scoring is by alias, the same for every row. In the first run two of Token Reduction's correct answers, questions 17 and 20, also list an
   extra item. A stricter rule would mark them wrong.
 - Local check on the validation set, Token Reduction, Qwen3.5-9B nvfp4 in Ollama, one run: 17 of 20, median 6 turns, 41k tokens, 16.8 minutes.
@@ -54,3 +56,5 @@ measurement and not a candidate. Three runs each, Qwen3.5-9B, 4-bit (fp4), Darkb
 
 The hint lowers empty and repeated searches and does not raise the score: validation scores 15, 15, 15 without it and 12, 13, 15 with it, on the shared 531 pages. The hint came from the traces of 5 ViDoRe questions on the earlier 222-page corpus. Three logs from the first validation attempt lost one question each to a
 network outage; they were set aside and all three runs repeated.
+
+- `merged_bm25_loop` and `merged_fusion_loop` fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by BM25 and embedding through reciprocal rank fusion. They were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.

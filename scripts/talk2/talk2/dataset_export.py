@@ -285,6 +285,8 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
   names its `model`, `quantization`, `hosted_provider` and the `seed` sent; at temperature 0 the seed has little effect.
 - Iterations: Trace Fixes is configuration `merged_grep_revision2`, Token Reduction is `merged_grep_revision3`, and
   Thinking is `merged_grep_revision3_thinking`.
+- `merged_bm25_loop` and `merged_fusion_loop` are the grep agent with a ranked search tool, added after the test scores of the
+  other configurations were known.
 
 ## Files
 

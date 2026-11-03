@@ -39,6 +39,8 @@ CONFIGURATIONS = {
     "merged_grep_revision3_with_review": ("markdown_merged", "grep_revision3_with_review"),
     "merged_grep_revision3_thinking": ("markdown_merged", "grep_revision3_thinking"),
     "merged_grep_revision3_bare_empty_result": ("markdown_merged", "grep_revision3_bare_empty_result"),
+    "merged_bm25_loop": ("markdown_merged", "bm25_loop"),
+    "merged_fusion_loop": ("markdown_merged", "fusion_loop"),
     "text_grep_revision3": ("text", "grep_revision3"),
 }
 RUNS_ROOT = EVAL_ROOT / "runs"
@@ -110,7 +112,12 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         from talk2.harness_agent import SessionMemory, answer_question as harness_answer
         from talk2.harness_tools import CorpusTools
 
-        tools = CorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md")
+        if retrieval in ("bm25_loop", "fusion_loop"):
+            from talk2.ranked_search_tools import RankedCorpusTools
+
+            tools = RankedCorpusTools(CORPUS_PDF.parent / corpus, ".md", corpus, use_embedding=retrieval == "fusion_loop")
+        else:
+            tools = CorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md")
         memory = SessionMemory() if retrieval == "grep_memory" else None
 
     def answer(question: dict) -> dict:
