@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from talk2.corpus_assembly import CORPUS_NAME, CORPUS_PDF, EVAL_ROOT, REPOSITORY_ROOT
-from talk2.model_client import (DEFAULT_MODEL, HOSTED_PROVIDER, SEED, HOSTED_QUANTIZATION, LOCAL_QUANTIZATION, cache_activity,
+from talk2.model_client import (DEFAULT_MODEL, HOSTED_PROVIDER, SEED, HOSTED_QUANTIZATION, LOCAL_QUANTIZATION,
                                 release_memory_if_short)
 from talk2.scoring import load_questions, score
 
@@ -112,7 +112,6 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         memory = SessionMemory() if retrieval == "grep_memory" else None
 
     def answer(question: dict) -> dict:
-        cache_activity.cached_calls, cache_activity.cached_seconds = 0, 0.0
         try:
             if retrieval in ("embedding", "embedding_thinking", "hybrid"):
                 result = rag_answer(question["question"], retriever, model, backend,
@@ -130,8 +129,6 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
                       "score": {"correct": False, "detail": "error"}}
         if backend == "ollama":
             release_memory_if_short(model)
-        result["cached_model_calls"] = getattr(cache_activity, "cached_calls", 0)
-        result["cached_seconds"] = round(getattr(cache_activity, "cached_seconds", 0.0), 1)
         print(f"{configuration} r{repeat} #{question['order']} {question['id']}: "
               f"{'CORRECT' if result['score']['correct'] else 'wrong'} "
               f"answer={str(result['response'].get('answer', result.get('error', '')))[:90]!r}", flush=True)

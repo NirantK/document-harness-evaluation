@@ -66,6 +66,8 @@ Tag `talk2-revision3-frozen`. Weights: Qwen3.5-9B, fp4, Darkbloom through OpenRo
 minutes against the 40 minutes a local run took. Revision 2's prompt with a map of the collection, reads of up to eight pages in
 one call that name every page left out, per-term counts after an empty multi-term search, the answer kept when a later reply is
 empty, no review turn, catalogue in the first two turns, 15-turn limit.
-On the 30 tuning questions: revision 3 21 of 30 (16 + 5), revision 2 20 of 30 (14 + 6); median tokens 40k against 108k and 88k
-against 162k. Variants tried and dropped: a ten-turn limit (lost one question), four pages a read and three refused turns (more
+The decision to freeze rested on 21 of 30 for revision 3 against 20 of 30 for revision 2, seed 42. Those revision 3 runs replayed most
+replies from a saved-reply cache, since removed. Run fresh, the frozen version scores 17 of 30 (12 + 5) on seed 42 and 14 of 20 on
+tuning seeds 43 and 44; revision 2 scores 20 of 30 on seed 42 and 13 of 20 on seeds 43 and 44. The frozen code did not change.
+Median tokens on tuning: about 40k against 109k. Variants tried and dropped: a ten-turn limit (lost one question), four pages a read and three refused turns (more
 turns, no gain). Scores moved by one or two questions between near-identical versions, so treat that as the noise floor.

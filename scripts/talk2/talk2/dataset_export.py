@@ -190,7 +190,8 @@ def build_answers() -> list[dict]:
                     response = record.get("response") or {}
                     rows.append({
                         "corpus": corpus, "model": record["model"], "configuration": record["configuration"],
-                        "quantization": record.get("quantization") or ("nvfp4" if record["model"] == "qwen3.5:9b" else ""),
+                        "quantization": record.get("quantization") or ("nvfp4" if record["model"] == "qwen3.5:9b" else
+                                                                        record["model"].rsplit(":", 1)[-1]),
                         "hosted_provider": record.get("hosted_provider") or "", "seed": record.get("seed") or 42,
                         "repeat": record["repeat"], "question_id": record["id"], "question_source": questions[record["id"]]["source"],
                         "answer": str(response.get("answer", "")), "files": json.dumps(response.get("files", [])),
@@ -320,7 +321,8 @@ This card is a practical summary and not legal advice.
 FULL_NOTES = "## Variant notes\n\nThis full variant is for local use only. It contains documents that do not permit redistribution."
 PUBLIC_NOTES = ("## Variant notes\n\nPages with `redistribution` other than `permitted` are excluded. XL-DocBench question text, gold "
                 "answers and scoring rules are withheld (`text_withheld`), and `resolve_xl_docbench.py` fills question text "
-                "and the benchmark answer by `id` from microsoft/XL-DocBench. Answers to questions on restricted documents and "
+                "and the benchmark answer by `id` from microsoft/XL-DocBench. The current release lacks five of these questions, "
+                "four of them in `unseen`, and the script names them. Answers to questions on restricted documents and "
                 "tool outputs that touch them read `" + OMITTED + "`. Scores, call counts, seconds and tokens stay.")
 
 RESOLVER = '''"""Fill withheld XL-DocBench question text from the source benchmark. Usage: python resolve_xl_docbench.py"""
@@ -335,13 +337,16 @@ for name in ("qa_single_doc.jsonl", "qa_cross_doc.jsonl"):
     for line in urlopen(BASE + name):
         row = json.loads(line)
         source[row["question_id"]] = row
-for path_name in ("rag_misses", "multi_hop", "holdout", "holdout2"):
+for path_name in ("rag_misses", "multi_hop", "holdout", "holdout2", "unseen"):
     try:
         rows = parquet.read_table(f"questions/{path_name}.parquet").to_pylist()
     except FileNotFoundError:
         continue
+    missing = [row["id"] for row in rows if row["text_withheld"] and row["id"] not in source]
+    if missing:
+        print(f"{path_name}: not in the current XL-DocBench release: {', '.join(missing)}")
     for row in rows:
-        if row["text_withheld"]:
+        if row["text_withheld"] and row["id"] in source:
             row["question"], row["gold"] = source[row["id"]]["question"], str(source[row["id"]]["answer"]["value"])
     with open(f"questions_{path_name}_resolved.jsonl", "w") as handle:
         handle.writelines(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows)

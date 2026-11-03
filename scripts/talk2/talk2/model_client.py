@@ -8,19 +8,15 @@ Messages use one neutral shape: {"role", "content", "tool_calls": [{"id", "name"
 "tool_call_id", "name"}; each backend converts it.
 """
 
-import dataclasses
 import json
 import os
 import shutil
 import subprocess
 import sys
-import threading
 import time
 from dataclasses import dataclass, field
 
 import httpx
-
-from talk2.response_cache import request_key, store_reply, stored_reply
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
@@ -48,7 +44,6 @@ SERVER_RETRY_ATTEMPTS = 20
 # loaded and is released only when memory is short.
 LOADED_MODEL_KEEP_ALIVE = "30m"
 UNLOAD_BELOW_FREE_MEMORY_PERCENT = 25
-cache_activity = threading.local()
 
 
 @dataclass
@@ -175,26 +170,6 @@ def openai_messages(messages: list[dict]) -> list[dict]:
 
 def chat(messages: list[dict], tools: list[dict] | None = None, model: str = DEFAULT_MODEL,
          backend: str = "ollama", think: bool = False) -> ChatTurn:
-    """One model reply, from the disk cache when this exact request has been answered before."""
-    key = request_key({"messages": messages, "tools": tools, "model": model, "backend": backend, "think": think,
-                       "seed": SEED, "num_ctx": CONTEXT_LENGTH,
-                       "max_output_tokens": THINKING_OUTPUT_TOKENS if think and backend == "openrouter" else MAX_OUTPUT_TOKENS,
-                       "hosted_provider": HOSTED_PROVIDER if backend == "openrouter" else ""})
-    try:
-        stored = json.loads(stored_reply(key))
-        seconds = stored.pop("seconds")
-        cache_activity.cached_calls = getattr(cache_activity, "cached_calls", 0) + 1
-        cache_activity.cached_seconds = getattr(cache_activity, "cached_seconds", 0.0) + seconds
-        return ChatTurn(**stored)
-    except KeyError:
-        pass
-    started = time.time()
-    turn = request_reply(messages, tools, model, backend, think)
-    store_reply(key, {**dataclasses.asdict(turn), "seconds": round(time.time() - started, 2)})
-    return turn
-
-
-def request_reply(messages: list[dict], tools: list[dict] | None, model: str, backend: str, think: bool) -> ChatTurn:
     if backend == "ollama":
         wait_for_resources(model)
         body = {"model": model, "messages": ollama_messages(messages), "stream": False, "think": think,

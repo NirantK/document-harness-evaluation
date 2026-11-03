@@ -5,4 +5,4 @@
 | Configuration | Correct per seed | Median turns | Median tokens |
 | --- | ---: | ---: | ---: |
 | Revision 2 | 6 | 14.5 | 162.1k |
-| Revision 3 | 5 | 13.5 | 87.5k |
+| Revision 3 | 5 | 13 | 97.7k |

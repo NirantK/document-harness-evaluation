@@ -11,5 +11,5 @@
 | Grep, single fan-out, thinking | 10, 6, 3 | 2 | 18.8k |
 | Grep, agentic search | 13, 15, 13 | 12.5 | 68.0k |
 | Revision 2 | 14, 13, 13 | 12 | 109.4k |
-| Revision 3 | 16, 14, 14 | 6 | 40.3k |
+| Revision 3 | 12, 14, 14 | 6.5 | 40.3k |
 | Revision 3, thinking | 16, 15, 16 | 8 | 44.4k |
