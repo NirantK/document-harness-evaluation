@@ -119,18 +119,18 @@ class AgentRevision:
 
 
 REVISION_1 = AgentRevision()
-# Display name: Improving Correctness. Configuration merged_grep_revision2.
+# Display name: Trace Fixes. Configuration merged_grep_revision2.
 REVISION_2 = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, refused_calls_are_free=True)
 REVISION_2_THINKING = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, refused_calls_are_free=True,
                                     think=True)
-# Display name: Improving Speed. Configuration merged_grep_revision3.
+# Display name: Token Reduction. Configuration merged_grep_revision3.
 REVISION_3 = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, refused_calls_are_free=True,
                            prompt=DOMAIN_PROMPT, turn_limit=15, catalogue_turns=2, read_several_pages=True,
                            keep_reviewed_answer=True, report_term_counts=True, review_step=False)
 REVISION_3_WITH_REVIEW = dataclasses.replace(REVISION_3, review_step=True)
 # Display name: Thinking. Configuration merged_grep_revision3_thinking.
 REVISION_3_THINKING = dataclasses.replace(REVISION_3, think=True)
-# Measurement only: Improving Speed with empty search results reduced to the bare count. Not a candidate configuration.
+# Measurement only: Token Reduction with empty search results reduced to the bare count. Not a candidate configuration.
 REVISION_3_BARE_EMPTY_RESULT = dataclasses.replace(REVISION_3, report_term_counts=False, empty_result_hint=False)
 FINAL_ANSWER = {"type": "function", "function": {
     "name": "final_answer",

@@ -4,5 +4,5 @@
 
 | Iteration | Configuration in the logs | Correct per run | Median turns | Median tokens |
 | --- | --- | ---: | ---: | ---: |
-| Improving Correctness | `merged_grep_revision2` | 6 | 14.5 | 162.1k |
-| Improving Speed | `merged_grep_revision3` | 5 | 13 | 97.7k |
+| Trace Fixes | `merged_grep_revision2` | 6 | 14.5 | 162.1k |
+| Token Reduction | `merged_grep_revision3` | 5 | 13 | 97.7k |

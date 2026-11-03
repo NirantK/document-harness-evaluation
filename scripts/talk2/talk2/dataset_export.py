@@ -14,7 +14,7 @@ from urllib.parse import quote
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 EVAL_ROOT = REPOSITORY_ROOT / "eval" / "talk2"
 OUTPUT_ROOT = REPOSITORY_ROOT / "data" / "hf_talk2_harness_evaluation"
-CORPORA = ("pages_multihop", "pages_holdout", "pages_unseen", "pages_holdout2")
+CORPORA = ("pages_validation", "pages_unseen", "pages_multihop", "pages_holdout", "pages_holdout2")
 DATASET_REPOSITORY = "nirantk/document-harness-evaluation"
 DATASET_FILE_BASE = f"https://huggingface.co/datasets/{DATASET_REPOSITORY}/resolve/main/files"
 PAGE_RENDER_DPI = 100
@@ -156,7 +156,7 @@ def build_questions() -> list[dict]:
         for line in path.open():
             question = json.loads(line)
             rows.setdefault(question["id"], {
-                "id": question["id"], "set": question["set"], "source": question["source"],
+                "id": question["id"], "set": {"unseen": "test"}.get(question["set"], question["set"]), "source": question["source"],
                 "question": question["question"], "gold": str(question["gold"]), "match": json.dumps(question["match"]),
                 "evidence_documents": json.dumps(question.get("evidence_docs", [])),
                 "evidence_pages": json.dumps(question.get("evidence_subset_pages", [])),
@@ -267,11 +267,11 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
 
 ## Evaluation stages
 
-- `rag_misses`, `multi_hop`: tuning questions. The agent was changed after reading their traces.
-- `holdout`: ten questions held back from the first agent, then used to change the harness. Treat them as tuning data
+- `rag_misses`, `multi_hop`: validation questions. The agent was changed after reading their traces.
+- `holdout`: ten questions held back from the first agent, then used to change the harness. Treat them as validation data
   for any later revision.
-- `unseen`: twenty questions selected before their first run. No harness change came from their results or traces.
-  Fifteen ran first as `holdout2`; five more were added to match the twenty tuning questions.
+- `test`: twenty questions selected before their first run. No harness change came from their results or traces.
+  Fifteen ran first as `holdout2`; five more were added to match the twenty validation questions. Validation and test search the same 531 pages. In `answers`, corpus `pages_validation` holds the validation runs and `pages_unseen` the test runs; `pages_multihop` holds earlier validation runs on 222 of those pages, where the harness was tuned.
 
 ## Retrieval and models
 
@@ -283,7 +283,7 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
 - Answer model: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
   `qwen/qwen3.5-9b`, three runs. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, one run. Each row of `answers`
   names its `model`, `quantization`, `hosted_provider` and the `seed` sent; at temperature 0 the seed has little effect.
-- Iterations: Improving Correctness is configuration `merged_grep_revision2`, Improving Speed is `merged_grep_revision3`, and
+- Iterations: Trace Fixes is configuration `merged_grep_revision2`, Token Reduction is `merged_grep_revision3`, and
   Thinking is `merged_grep_revision3_thinking`.
 
 ## Files
@@ -309,7 +309,7 @@ This card is a practical summary and not legal advice.
 
 FULL_NOTES = "## Variant notes\n\nThis full variant is for local use only. It contains documents that do not permit redistribution."
 PUBLIC_NOTES = ("## Variant notes\n\nEvery question, gold answer, scoring rule, evidence quote, model answer and score is here. Five "
-                "XL-DocBench questions, four of them in `unseen`, come from an earlier release of that benchmark. Pages with "
+                "XL-DocBench questions, four of them in `test`, come from an earlier release of that benchmark. Pages with "
                 "`redistribution` other than `permitted` are excluded, because their source licences do not allow copies; "
                 "`source_url` and `open_page_url` lead to them. Tool outputs and prompts that reproduce those documents read `"
                 + OMITTED + "`.")

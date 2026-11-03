@@ -8,7 +8,7 @@ TARGET=${1:?working copy path}
 mkdir -p $TARGET/scripts/talk2 $TARGET/docs/files $TARGET/eval/talk2
 rsync -a --delete --exclude '.venv' --exclude '__pycache__' --exclude 'output' --exclude 'run_evaluation_queue.sh' \
   --exclude 'run_structured_evaluation.sh' $REPOSITORY/scripts/talk2/ $TARGET/scripts/talk2/
-for corpus in pages_multihop pages_holdout pages_holdout2 pages_unseen scanned_demonstration; do
+for corpus in pages_validation pages_multihop pages_holdout pages_holdout2 pages_unseen scanned_demonstration; do
   [[ -d $REPOSITORY/eval/talk2/$corpus ]] || continue
   mkdir -p $TARGET/eval/talk2/$corpus
   for name in method.md results.md results_notes.md question_selection.tsv page_selection.tsv corpus_manifest.tsv; do

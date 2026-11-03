@@ -1,4 +1,4 @@
-Naming: the deck calls revision 2 Improving Correctness and revision 3 Improving Speed; these notes keep the working names that match the log folders.
+Naming: the deck calls revision 2 Trace Fixes and revision 3 Token Reduction; these notes keep the working names that match the log folders.
 
 ## Post-freeze changes
 

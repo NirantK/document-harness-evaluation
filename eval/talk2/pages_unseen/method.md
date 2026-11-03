@@ -11,8 +11,8 @@ XL-DocBench reference-chain questions by position, then the same evidence-page a
 ## What was seen before the final runs
 
 - Revision 2 was run on the 15 carried questions, and its scores are reported. No harness change came from those traces.
-- While designing revision 3 the turn counts per question on the 15 were printed alongside the tuning sets. No prompt
-  text or question content was read from them. Revision 3's prompt comes from the tuning traces in `pages_multihop` and
+- While designing revision 3 the turn counts per question on the 15 were printed alongside the validation sets. No prompt
+  text or question content was read from them. Revision 3's prompt comes from the validation traces in `pages_multihop` and
   `pages_holdout`.
 - The merge in `markdown_merging.py` came from the conversion loss measurement over the corpus text against the PDF text
   layer, which uses no questions, and from the request to reduce conversion loss. The measurement ran on the `pages_holdout2`

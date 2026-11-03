@@ -10,7 +10,7 @@
 | Grep, single fan-out | `merged_grep_fanout` | 7, 7, 7 | 2 | 6.0k |
 | Grep, single fan-out, thinking | `merged_grep_fanout_thinking` | 10, 6, 3 | 2 | 18.8k |
 | Grep, agentic search | `merged_grep` | 13, 15, 13 | 12.5 | 68.0k |
-| Improving Correctness | `merged_grep_revision2` | 14, 13, 13 | 12 | 109.4k |
-| Improving Speed | `merged_grep_revision3` | 12, 14, 14 | 6.5 | 40.3k |
+| Trace Fixes | `merged_grep_revision2` | 14, 13, 13 | 12 | 109.4k |
+| Token Reduction | `merged_grep_revision3` | 12, 14, 14 | 6.5 | 40.3k |
 | Thinking | `merged_grep_revision3_thinking` | 16, 15, 16 | 8 | 44.4k |
-| Improving Speed, hint removed | `merged_grep_revision3_bare_empty_result` | 13, 14, 11 | 8 | 48.4k |
+| Token Reduction, hint removed | `merged_grep_revision3_bare_empty_result` | 13, 14, 11 | 8 | 48.4k |

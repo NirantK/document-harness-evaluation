@@ -6,7 +6,7 @@ One small model stays fixed: Qwen3.5-9B at temperature 0. Final runs use the 4-b
 `qwen/qwen3.5-9b`, three runs. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, one run. Every run log names its
 model, quantization, provider and the seed sent; at temperature 0 the seed has little effect.
 
-The talk names its iterations by goal: Improving Correctness is configuration `merged_grep_revision2`, Improving Speed is
+The talk displays its iterations under these names: Trace Fixes is configuration `merged_grep_revision2`, Token Reduction is
 `merged_grep_revision3`, and Thinking is `merged_grep_revision3_thinking`. Only the harness around the model changes, and every change is scored on the same
 questions. Embeddings and page conversion stay local in Ollama.
 
@@ -23,8 +23,8 @@ questions. Embeddings and page conversion stay local in Ollama.
 - `scripts/talk2/talk2/`: the harness. `structured_agent.py` holds the agent prompts and revisions, `fanout_answering.py`
   the single fan-out query, `rag_answering.py` the linear pipe, `markdown_merging.py` the text-layer merge,
   `conversion_comparison.py` the conversion loss measurement.
-- `eval/talk2/<corpus>/`: method notes, results and page selections for each question set. `pages_multihop` is the tuning
-  set and `pages_unseen` the held-out set.
+- `eval/talk2/<corpus>/`: method notes, results and page selections for each question set. Validation is `pages_validation`
+  and test is `pages_unseen`; both search the same 531 pages. `pages_multihop` holds earlier validation runs on 222 of them.
 - `docs/files/`: selected source pages whose licences permit redistribution, served by GitHub Pages so a link ending in
   `#page=N` opens at that page. `docs/files/document_index.tsv` lists every document, its licence and its source.
 

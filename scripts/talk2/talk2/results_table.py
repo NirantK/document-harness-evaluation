@@ -9,11 +9,12 @@ from talk2.scoring import load_questions
 
 RUN_LABEL = "qwen3.5-9b-fp4-darkbloom"
 MODEL_NOTE = "Qwen3.5-9B, 4-bit (fp4), Darkbloom through OpenRouter (`qwen/qwen3.5-9b`), temperature 0"
-ROWS = [("RAG, embedding", "merged_rag"), ("RAG, embedding, thinking", "merged_rag_thinking"), ("RAG, hybrid", "merged_hybrid"),
+ROWS = [("PDF text, RAG, embedding", "rag"), ("PDF text, RAG, hybrid", "text_hybrid"), ("PDF text, grep, agentic search", "text_grep"),
+        ("RAG, embedding", "merged_rag"), ("RAG, embedding, thinking", "merged_rag_thinking"), ("RAG, hybrid", "merged_hybrid"),
         ("Grep, single fan-out", "merged_grep_fanout"), ("Grep, single fan-out, thinking", "merged_grep_fanout_thinking"),
-        ("Grep, agentic search", "merged_grep"), ("Improving Correctness", "merged_grep_revision2"), ("Improving Speed", "merged_grep_revision3"),
+        ("Grep, agentic search", "merged_grep"), ("Trace Fixes", "merged_grep_revision2"), ("Token Reduction", "merged_grep_revision3"),
         ("Thinking", "merged_grep_revision3_thinking"),
-        ("Improving Speed, hint removed", "merged_grep_revision3_bare_empty_result")]
+        ("Token Reduction, hint removed", "merged_grep_revision3_bare_empty_result")]
 
 
 def complete_runs(configuration: str, question_count: int) -> dict[int, list[dict]]:
