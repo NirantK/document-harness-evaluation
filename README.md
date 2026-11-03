@@ -3,8 +3,11 @@
 Code and method behind the talk **Better Harness, Better Answers: Document Intelligence Without Bigger Models**.
 
 One small model stays fixed: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
-`qwen/qwen3.5-9b`, seeds 42 to 44. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, seed 42. Every run log names its
-model, quantization, provider and seed. Only the harness around the model changes, and every change is scored on the same
+`qwen/qwen3.5-9b`, three runs. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, one run. Every run log names its
+model, quantization, provider and the seed sent; at temperature 0 the seed has little effect.
+
+The talk names its iterations by goal: Improving Correctness is configuration `merged_grep_revision2`, Improving Speed is
+`merged_grep_revision3`, and Thinking is `merged_grep_revision3_thinking`. Only the harness around the model changes, and every change is scored on the same
 questions. Embeddings and page conversion stay local in Ollama.
 
 ## The three components
