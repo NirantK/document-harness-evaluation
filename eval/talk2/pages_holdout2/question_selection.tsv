@@ -1,0 +1,38 @@
+position	question_id	decision	reason
+47	adubench_single_000690	rejected	Gold named in the question.
+48	adubench_single_000607	rejected	One fact on one page; no chain.
+49	adubench_single_000014	rejected	Gold not determined: the match is a judgement.
+50	adubench_single_001140	accepted	
+51	adubench_single_000596	rejected	One fact on one page; no chain.
+52	adubench_single_000366	rejected	The PDF on disk has one page; the evidence pages are missing.
+53	adubench_single_000733	rejected	Gold not located in the PDF text of the evidence pages.
+54	adubench_single_000727	rejected	Gold not determined: the match is a judgement.
+55	adubench_single_001194	rejected	Gold is not a term in the document.
+56	adubench_single_001217	accepted	
+57	adubench_single_000539	rejected	One fact on one page; no chain.
+58	adubench_single_000672	rejected	Gold named in the question.
+59	adubench_single_000534	rejected	One fact on one page; no chain.
+60	adubench_single_000638	rejected	One fact on one page; no chain.
+61	adubench_single_001274	accepted	
+62	adubench_single_000397	rejected	One fact on one page; no chain.
+63	adubench_single_000503	accepted	
+64	adubench_single_000646	accepted	
+65	adubench_single_000391	accepted	
+66	adubench_single_001029	accepted	
+67	adubench_single_000385	accepted	
+68	adubench_single_000662	accepted	
+69	adubench_single_000350	rejected	One fact on one page; no chain.
+70	adubench_single_000998	rejected	One fact on one page; no chain.
+71	adubench_single_000036	accepted	
+72	adubench_single_000814	rejected	One fact on one page; no chain.
+73	adubench_single_000259	rejected	One fact on one page; no chain.
+74	adubench_single_001346	rejected	One fact on one page; no chain.
+75	adubench_single_000100	rejected	One fact on one page; no chain.
+76	adubench_single_000511	accepted	
+77	adubench_single_000468	rejected	Gold not determined: the match is a judgement.
+78	adubench_single_000743	rejected	Gold not determined: the match is a judgement.
+79	adubench_single_001190	accepted	
+80	adubench_single_000838	accepted	
+81	adubench_single_000212	rejected	One fact on one page; no chain.
+82	adubench_single_000271	accepted	
+83	adubench_single_001279	accepted	

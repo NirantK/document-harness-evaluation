@@ -1,0 +1,13 @@
+Document Harness Evaluation
+Copyright 2026 Nirant Kasliwal
+
+The code and documentation in this repository are licensed under the Apache License, Version 2.0.
+The Apache licence does not cover the third-party documents and benchmark data this work uses. They keep their own terms:
+
+- CUAD (The Atticus Project), CC BY 4.0. PDFs under docs/files/cuad are selected pages from it.
+- ViDoRe v3 (arXiv 2601.08620), CC BY 4.0 annotations, with per-document licences. PDFs under docs/files/vidore-* are
+  selected pages from documents whose terms permit redistribution; the index file names each licence.
+- XL-DocBench (arXiv 2608.00036). Its release grants no redistribution rights for third-party PDFs, so neither its PDFs
+  nor its question text appear here. The index file links each original source.
+
+docs/files/document_index.tsv lists every document, its licence and its source.

@@ -1,0 +1,29 @@
+position	question_id	decision	reason
+19	adubench_single_000983	rejected	Gold not unique: the clause gives 60, 65 and 75 percent by date.
+20	adubench_single_001005	accepted	
+21	adubench_single_000265	rejected	Gold not determined: 'most directly contradicted' is a judgement.
+22	adubench_single_000040	accepted	
+23	adubench_single_000402	rejected	Gold named in the question.
+24	adubench_single_000816	rejected	Gold not determined: 'most directly matches' is a judgement.
+25	adubench_single_001177	accepted	
+26	adubench_single_000544	rejected	Gold not determined: 'best addresses' is a judgement.
+27	adubench_single_001317	rejected	One fact on one page; no chain.
+28	adubench_single_000173	accepted	
+29	adubench_single_000204	rejected	Gold (98%) does not answer the question asked.
+30	adubench_single_000106	accepted	
+31	adubench_single_000266	rejected	One fact on one page; no chain.
+32	adubench_single_000720	accepted	
+33	adubench_single_001264	accepted	
+34	adubench_single_000050	rejected	One fact on one page; no chain.
+35	adubench_single_001156	rejected	Gold named in the question.
+36	adubench_single_001210	rejected	Gold named in the question.
+37	adubench_single_000255	rejected	Gold not determined: the question's supersession claim is not stated in the document.
+38	adubench_single_001202	rejected	One fact on one page; no chain.
+39	adubench_single_000076	rejected	One fact on one page; no chain.
+40	adubench_single_000780	accepted	
+41	adubench_single_001265	rejected	Gold not unique: primary peritoneal cancer appears in both sections.
+42	adubench_single_000447	accepted	
+43	adubench_single_000706	rejected	Gold named in the question.
+44	adubench_single_000179	rejected	One fact on one page; no chain.
+45	adubench_single_000903	rejected	One fact on one page; no chain.
+46	adubench_single_000855	accepted	

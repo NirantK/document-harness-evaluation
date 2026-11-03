@@ -1,0 +1,20 @@
+position	question_id	decision	reason
+0	adubench_single_000697	accepted	
+1	adubench_single_000226	rejected	Gold named in the question (PPSD).
+2	adubench_single_000495	rejected	One fact on one page; no chain.
+3	adubench_single_000284	rejected	Gold not unique: other works are also in Minor Works.
+4	adubench_single_000986	rejected	Gold not determined: nothing links the Editor-in-Chief role to the Executive summary.
+5	adubench_single_000310	accepted	
+6	adubench_single_000875	accepted	
+7	adubench_single_001234	rejected	Gold not unique: all the illustrative families appear in both lists.
+8	adubench_single_000132	rejected	One fact on one page; no chain.
+9	adubench_single_000329	accepted	
+10	adubench_single_001200	accepted	
+11	adubench_single_000283	accepted	
+12	adubench_single_000580	rejected	Gold not determined: the match to the competitiveness objective is a judgement.
+13	adubench_single_001107	accepted	
+14	adubench_single_000826	accepted	
+15	adubench_single_000689	accepted	
+16	adubench_single_000942	rejected	Gold guessable without the document (agriculture).
+17	adubench_single_000097	rejected	One fact on one page; the question names the entry to look up.
+18	adubench_single_000551	accepted	

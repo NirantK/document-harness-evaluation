@@ -1,0 +1,27 @@
+[project]
+name = "talk2"
+version = "0.1.0"
+description = "Talk 2 evaluation: plain RAG against the Deep Seek Harness on the frozen rag-misses questions"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "typer",
+    "pymupdf",
+    "pymupdf4llm",
+    "huggingface-hub",
+    "pandas",
+    "pyarrow",
+    "openai",
+    "llama-index-core",
+    "llama-index-vector-stores-faiss",
+    "llama-index-embeddings-ollama",
+    "faiss-cpu",
+    "tokenizers",
+    "bm25s",
+]
+
+[project.scripts]
+talk2 = "talk2.cli:application"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

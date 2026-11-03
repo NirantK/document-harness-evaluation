@@ -1,0 +1,12 @@
+position	question_id	decision	reason
+84	adubench_single_000115	rejected	Gold not determined: 'matches' is a judgement.
+85	adubench_single_000294	rejected	Gold not determined: 'best matches' is a judgement.
+86	adubench_single_000285	accepted	
+87	adubench_single_000228	rejected	Gold not determined: 'best matches' is a judgement.
+88	adubench_single_001291	rejected	Gold not determined: 'reconciles' with a 'matching clue' is a judgement.
+89	adubench_single_000384	accepted	
+90	adubench_single_000157	rejected	Gold (Fm) does not answer the either-or question asked.
+91	adubench_single_000448	accepted	
+92	adubench_single_001073	accepted	
+93	adubench_single_000625	rejected	Gold not determined: 'best matches' is a judgement.
+94	adubench_single_000565	accepted	
