@@ -1,0 +1,1 @@
+Run separately, on Qwen3.5-9B fp4 through Darkbloom: the agent over the PDF text layer answered not_found on both the scan and the drawing, and the same agent over the merged Markdown answered both correctly, with 1.5 m and the safety pin stowage bracket.

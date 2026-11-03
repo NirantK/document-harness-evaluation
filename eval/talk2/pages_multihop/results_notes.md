@@ -43,3 +43,29 @@ Every change after the `talk2-multihop-frozen` tag:
    Modelfile's `presence_penalty` 1.5).
 
 5. **The tools cut long lines with no notice (found 2 Nov 2026, after the structured runs).** Question 6 scored 5 of 6 with the structured agent. The missed NICE contract has clause "17.11. LAW AND JURISDICTION ... laws of the state of Israel" at character 2,197 of a 4,248-character line, because the converter merged clauses 17.9 to 17.11 into one line. `search` displayed 400 characters of a line and `read` 600, in both the old and the structured agent, and neither said so. The agent found and opened the right file, then could not see the clause. 23 of the 68 Markdown files hold a line over 1,000 characters. Revision 2 shows excerpts around each match and whole lines on `read` (tag `talk2-revision2-long-lines-frozen`). A smoke test on question 6 then named the NICE contract in 12 calls, with the clause quoted. Revision 1 keeps the cut display, so its logged scores stay reproducible. All grep scores before revision 2 carry this limit.
+
+## Revision 3, first draft (3 Nov 2026)
+
+Prompt with a domain map, many calls per turn, no review turn, catalogue in the first turn only, six-turn limit. 12 correct of
+the 18 questions it finished, with about 20k tokens per question. The last two questions ended in Ollama read timeouts while
+OCR trials shared the machine, so they are not model failures. Log: `merged_grep_revision3_first_draft`.
+Traces on the tuning set showed three causes, which led to the second version: the limit stopped reads short (questions 2, 8,
+12), answers stopped one hop short with no review turn (question 16), and calls repeated a page already read (questions 8, 18).
+
+## Revision 3, second draft (3 Nov 2026)
+
+Same prompt plus review turn, unread-page notes and a ten-turn limit. 13 of 20, median 8 turns, median 44k tokens, mean 42k
+(revision 2 on the earlier Markdown: 16 of 20, median 7.5 turns, median 62k, mean 85k). Tokens fell by half and turns did not:
+the model sends one call per reply whatever the prompt asks, and the unread-page note drew it through pages in order (question
+12 read nine pages one by one). It lost questions 8, 10, 12 and 16, and gained 17. Eight questions reached the limit. Log:
+`merged_grep_revision3_second_draft`. The third version starts from revision 2's prompt rather than a shorter one.
+
+## Revision 3, frozen version (3 Nov 2026)
+
+Tag `talk2-revision3-frozen`. Weights: Qwen3.5-9B, fp4, Darkbloom through OpenRouter, because each of the runs below finished in
+minutes against the 40 minutes a local run took. Revision 2's prompt with a map of the collection, reads of up to eight pages in
+one call that name every page left out, per-term counts after an empty multi-term search, the answer kept when a later reply is
+empty, no review turn, catalogue in the first two turns, 15-turn limit.
+On the 30 tuning questions: revision 3 21 of 30 (16 + 5), revision 2 20 of 30 (14 + 6); median tokens 40k against 108k and 88k
+against 162k. Variants tried and dropped: a ten-turn limit (lost one question), four pages a read and three refused turns (more
+turns, no gain). Scores moved by one or two questions between near-identical versions, so treat that as the noise floor.

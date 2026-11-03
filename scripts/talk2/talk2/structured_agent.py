@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from talk2.answer_format import parse_answer
 from talk2.harness_agent import EMPTY_REPLY_PROMPTS
 from talk2.model_client import MalformedToolCall, chat
-from talk2.structured_tools import TOOL_DEFINITIONS, StructuredCorpusTools
+from talk2.structured_tools import TOOL_DEFINITIONS_SEVERAL_PAGES, TOOL_DEFINITIONS, StructuredCorpusTools
 
 TOOL_CALL_BUDGET = 20
 MINIMUM_SEARCHES_BEFORE_REFUSAL = 4
@@ -61,46 +61,25 @@ Reply with only this JSON object:
 - "evidence" holds one short quote for each part of the answer.
 </final_answer>"""
 
-CONCISE_PROMPT = """<role>
-You answer questions about a document collection in as few turns as you can. You cannot see the files except through
-the tools. Every fact in your answer must come from a line you have read with a tool.
-</role>
-
-<catalogue>
-path | title | language | pages
-{catalogue}
-</catalogue>
-
-<collection>
+COLLECTION_SECTION = """<collection>
 Files come from these sources, shown by the first part of the path:
 - cuad/: commercial contracts filed as US SEC exhibits. Clauses are numbered. Governing law reads "governed by" or "laws
   of". A restriction may be worded "exclusive", "shall not" or "compete" without using the word in the question.
 - vidore-*/: European and French reports on energy, finance, employment and industry. French reports need French terms.
 - xl-docbench/: long public reports, standards and books. A question often names the document or a section by its title.
-Each file is Markdown converted from selected pages. A <!-- page N --> line marks the start of a page. A page number
-printed in a table of contents is not a line number and is not a page marker.
 </collection>
 
-<procedure>
-A turn is one reply. Every turn is expensive, and you may send several tool calls in one reply. Aim for three turns.
-Turn 1: send every search you can already foresee, together, three to six calls. When the question names a document,
-pass that file in each search. When it names no document, search all files. Write terms of one to three words as the
-document would write them, with | between alternatives. When it asks which documents match, use mode="count".
-Turn 2: read the pages that hold the hits, together, with read and page=N. Read every candidate file in this one turn.
-Turn 3: call final_answer. Search again only if a part of the question has no supporting line.
-When the question asks whether something exists, a related but different thing does not count: answer "No, ..." once
-the likely clauses show that it is absent.
-</procedure>
+<reply_economy>
+Each reply resends the whole conversation, so fewer replies cost less. Send every call you can already foresee in one
+reply: several searches together, then several reads together. To read several pages of a file, make one read call with
+pages=[2, 3, 4]. Do not read pages one at a time.
+</reply_economy>
 
-<final_answer>
-Call final_answer with:
-- answer: a short answer in the document's exact wording.
-- files: every catalogue path that supports the answer. A question asking which documents match lists every match.
-- found: "yes" when you found the answer or the thing exists, "no" when the documents show it does not exist,
-  "not_found" when the documents do not contain the answer.
-- evidence: one short quote for each part of the answer, each with its file and line, copied exactly from a line you read.
-</final_answer>"""
-CATALOGUE_OMITTED = "<catalogue>\nShown in your first turn. Use the paths in the results above.\n</catalogue>"
+"""
+DOMAIN_PROMPT = SYSTEM_PROMPT.replace("<procedure>", COLLECTION_SECTION + "<procedure>", 1)
+CATALOGUE_OMITTED = "<catalogue>\nShown in your first turns. Use the paths in the results above, or search all files.\n</catalogue>"
+SEVERAL_PAGES_COUNT = 8
+SEVERAL_PAGES_LIMIT = 24000
 
 REFUSAL_PROMPT = ("You have run only {searches} searches. Do not give up yet. Search different wording: a single "
                   "distinctive word, a synonym, or the terms in the document's language. Then give the final JSON.")
@@ -129,9 +108,12 @@ class AgentRevision:
     think: bool = False
     # Revision 3 fields: the fewest turns and tokens at the same score.
     prompt: str = SYSTEM_PROMPT
-    review_step: bool = True
     turn_limit: int = 0
-    catalogue_in_first_turn_only: bool = False
+    catalogue_turns: int = 0
+    read_several_pages: bool = False
+    keep_reviewed_answer: bool = False
+    report_term_counts: bool = False
+    review_step: bool = True
 
 
 REVISION_1 = AgentRevision()
@@ -139,7 +121,9 @@ REVISION_2 = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, r
 REVISION_2_THINKING = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, refused_calls_are_free=True,
                                     think=True)
 REVISION_3 = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, refused_calls_are_free=True,
-                           prompt=CONCISE_PROMPT, review_step=False, turn_limit=6, catalogue_in_first_turn_only=True)
+                           prompt=DOMAIN_PROMPT, turn_limit=15, catalogue_turns=2, read_several_pages=True,
+                           keep_reviewed_answer=True, report_term_counts=True, review_step=False)
+REVISION_3_WITH_REVIEW = dataclasses.replace(REVISION_3, review_step=True)
 REVISION_3_THINKING = dataclasses.replace(REVISION_3, think=True)
 FINAL_ANSWER = {"type": "function", "function": {
     "name": "final_answer",
@@ -203,6 +187,8 @@ def execute_call(call: dict, tools: StructuredCorpusTools, ledger: CallLedger, s
                             mode=arguments.get("mode") or "lines")
     if name == "outline":
         return tools.outline(arguments.get("path", ""))
+    if name == "read" and "pages" in arguments:
+        return read_pages(arguments.get("path", ""), page_numbers(arguments["pages"]), tools, ledger)
     if name == "read":
         selected = {k: v for k, v in arguments.items() if k in ("start_line", "line_count", "page")}
         path = arguments.get("path", "")
@@ -215,6 +201,53 @@ def execute_call(call: dict, tools: StructuredCorpusTools, ledger: CallLedger, s
             ledger.record_read(path, shown)
         return text
     return f"Unknown tool {name}. The tools are search, outline and read."
+
+
+def page_numbers(value) -> list[int]:
+    """Page numbers from a list or from text such as "2, 3" or "2-4", which the model sometimes writes instead."""
+    if isinstance(value, int):
+        return [value]
+    if isinstance(value, list):
+        return [number for item in value for number in page_numbers(item)]
+    numbers: list[int] = []
+    for first, last in re.findall(r"(\d+)(?:\s*-\s*(\d+))?", str(value)):
+        numbers += range(int(first), int(last or first) + 1)
+    return numbers
+
+
+def read_pages(path: str, pages: list[int], tools: StructuredCorpusTools, ledger: CallLedger) -> str:
+    """Read several pages in one call, up to SEVERAL_PAGES_LIMIT characters, and name any page left unread."""
+    parts, used = [], 0
+    not_shown = pages[SEVERAL_PAGES_COUNT:]
+    for position, page in enumerate(pages[:SEVERAL_PAGES_COUNT]):
+        requested = tools.line_range(path, None, None, page)
+        if requested and ledger.already_read(path, requested):
+            parts.append(f"Page {page} of {path} is already above.")
+            continue
+        text, shown = tools.read(path, page=page)
+        if used + len(text) > SEVERAL_PAGES_LIMIT and parts:
+            not_shown = pages[position:]
+            break
+        if shown:
+            ledger.record_read(path, shown)
+        parts.append(text)
+        used += len(text)
+    if parts and all(part.startswith("Page ") for part in parts) and not not_shown:
+        return f"Lines of those pages of {path} are already above. Search one term, read other pages, or answer."
+    if not_shown:
+        parts.append(f"Pages not shown: {', '.join(map(str, not_shown))}. A call shows at most {SEVERAL_PAGES_COUNT} pages. "
+                     "Search one term to find which of them you need.")
+    return "\n".join(parts)
+
+
+def term_counts_note(pattern: str, file: str, tools: StructuredCorpusTools) -> str:
+    """After a search for several terms joined by .* finds nothing, say how many lines hold each term alone."""
+    terms = [term.strip() for term in re.split(r"\.\*\??", pattern) if term.strip()]
+    if len(terms) < 2:
+        return ""
+    counts = [f"{term}: {tools.search(pattern=term, file=file, mode='count').splitlines()[0]}" for term in terms]
+    return ("\nNo single line holds all of these terms. Lines holding each term alone:\n" + "\n".join(counts)
+            + "\nSearch one term at a time, then read the page that holds it.")
 
 
 def missing_quotes(response: dict, tools: StructuredCorpusTools) -> list[str]:
@@ -236,7 +269,8 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
     system = revision.prompt.format(catalogue=tools.catalogue_text())
     messages = [{"role": "system", "content": system}, {"role": "user", "content": f"Question: {question['question']}"}]
     tool_calls_made = searches = empty_replies = malformed_calls = refused_turns = 0
-    tool_definitions = TOOL_DEFINITIONS + ([FINAL_ANSWER] if revision.final_answer_tool else [])
+    tool_definitions = (TOOL_DEFINITIONS_SEVERAL_PAGES if revision.read_several_pages else TOOL_DEFINITIONS) + (
+        [FINAL_ANSWER] if revision.final_answer_tool else [])
     stop_searching = False
     checks_used: set[str] = set()
     accepted: dict | None = None
@@ -245,7 +279,7 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
     while True:
         if revision.turn_limit and model_calls >= revision.turn_limit - 1:
             stop_searching = True
-        if revision.catalogue_in_first_turn_only and model_calls == 1:
+        if revision.catalogue_turns and model_calls == revision.catalogue_turns:
             messages[0]["content"] = re.sub(r"<catalogue>.*?</catalogue>", CATALOGUE_OMITTED, system, flags=re.DOTALL)
         budget_left = tool_calls_made < TOOL_CALL_BUDGET and not stop_searching
         if not budget_left:
@@ -291,6 +325,9 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
                     refused_in_turn = True
                     if revision.refused_calls_are_free:
                         tool_calls_made -= 1
+                if revision.report_term_counts and call["name"] == "search" and output.startswith("0 matches"):
+                    output += term_counts_note(str(arguments.get("pattern", "")),
+                                               str(arguments.get("file") or arguments.get("path") or ""), tools)
                 log.append({"tool": call["name"], "arguments": arguments, "output": output[:2500]})
                 output += f"\n<progress calls_used=\"{tool_calls_made}\" calls_limit=\"{TOOL_CALL_BUDGET}\"/>"
                 messages.append({"role": "tool", "content": output, "tool_call_id": call["id"], "name": call["name"]})
@@ -310,7 +347,7 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
 
         final_text = turn.content
         response = parse_answer(final_text)
-        if not response.get("parse_error"):
+        if not response.get("parse_error") and (response.get("answer") or not revision.keep_reviewed_answer):
             accepted = response
         check_prompt = ""
         if tool_calls_made < TOOL_CALL_BUDGET and not stop_searching:
@@ -333,7 +370,7 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
         messages += [{"role": "assistant", "content": final_text}, {"role": "user", "content": check_prompt}]
 
     response = parse_answer(final_text)
-    if response.get("parse_error") and accepted:
+    if accepted and (response.get("parse_error") or (revision.keep_reviewed_answer and not response.get("answer"))):
         response = accepted
     return {
         "response": response, "raw_reply": final_text, "trace": log,

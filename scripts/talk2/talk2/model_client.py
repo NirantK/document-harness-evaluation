@@ -8,30 +8,47 @@ Messages use one neutral shape: {"role", "content", "tool_calls": [{"id", "name"
 "tool_call_id", "name"}; each backend converts it.
 """
 
+import dataclasses
 import json
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 
 import httpx
 
+from talk2.response_cache import request_key, store_reply, stored_reply
+
 OLLAMA_URL = "http://localhost:11434/api/chat"
 OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
+# Hosted endpoints of the same weights that accept both tools and a seed, with the quantization each one lists on OpenRouter.
+HOSTED_QUANTIZATION = {"Darkbloom": "fp4", "DeepInfra": "bf16"}
+HOSTED_PROVIDER = os.environ.get("TALK2_HOSTED_PROVIDER", "Darkbloom")
+LOCAL_QUANTIZATION = "nvfp4"
+HOSTED_RETRY_ATTEMPTS = 8
+HOSTED_TIMEOUT_SECONDS = 300
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ4_XS"
-SEED = 42
+SEED = int(os.environ.get("TALK2_SEED", "42"))  # a repeat under another seed measures run-to-run noise
 CONTEXT_LENGTH = 49152
 # A generation that does not stop held a request open for 30 minutes on 1 Nov while the runner's memory grew.
 MAX_OUTPUT_TOKENS = 4096
+# Reasoning counts against the output limit: at 4096 the model spent the whole limit reasoning and wrote no reply.
+THINKING_OUTPUT_TOKENS = 16384
 REQUEST_TIMEOUT_SECONDS = 900
 PAUSE_BELOW_FREE_MEMORY_PERCENT = 15
 RESUME_AT_FREE_MEMORY_PERCENT = 40
 PAUSE_BELOW_FREE_DISK_GIB = 8
 RESOURCE_POLL_SECONDS = 30
 SERVER_RETRY_ATTEMPTS = 20
+# Unloading discards the runner's prompt prefix cache, which turns a 0.1 s prompt into 8.6 s at 26k tokens, so the model stays
+# loaded and is released only when memory is short.
+LOADED_MODEL_KEEP_ALIVE = "30m"
+UNLOAD_BELOW_FREE_MEMORY_PERCENT = 25
+cache_activity = threading.local()
 
 
 @dataclass
@@ -66,6 +83,32 @@ def wait_for_resources(model: str) -> None:
     while free_memory_percent() < RESUME_AT_FREE_MEMORY_PERCENT or free_disk_gib() < PAUSE_BELOW_FREE_DISK_GIB:
         time.sleep(RESOURCE_POLL_SECONDS)
     print(f"RESOURCE RESUME free_memory={free_memory_percent()}%", file=sys.stderr, flush=True)
+
+
+def post_to_openrouter(body: dict) -> dict:
+    """Retry rate limits, server errors and error bodies, so a provider outage is not recorded as a wrong answer."""
+    problem = ""
+    for attempt in range(HOSTED_RETRY_ATTEMPTS):
+        try:
+            response = httpx.post(OPENROUTER_URL, json=body, timeout=HOSTED_TIMEOUT_SECONDS,
+                                  headers={"Authorization": f"Bearer {read_openrouter_key()}"})
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("choices"):
+                    return data
+                problem = f"no choices: {str(data)[:200]}"
+            else:
+                problem = f"HTTP {response.status_code}: {response.text[:200]}"
+        except (httpx.TransportError, json.JSONDecodeError) as error:
+            problem = f"{type(error).__name__}: {error}"
+        print(f"OPENROUTER RETRY {attempt + 1}/{HOSTED_RETRY_ATTEMPTS} {problem}", file=sys.stderr, flush=True)
+        time.sleep(min(30, 2 ** attempt))
+    raise RuntimeError(f"OpenRouter unavailable after {HOSTED_RETRY_ATTEMPTS} attempts: {problem}")
+
+
+def release_memory_if_short(model: str) -> None:
+    if free_memory_percent() < UNLOAD_BELOW_FREE_MEMORY_PERCENT:
+        unload_model(model)
 
 
 class MalformedToolCall(RuntimeError):
@@ -132,10 +175,30 @@ def openai_messages(messages: list[dict]) -> list[dict]:
 
 def chat(messages: list[dict], tools: list[dict] | None = None, model: str = DEFAULT_MODEL,
          backend: str = "ollama", think: bool = False) -> ChatTurn:
+    """One model reply, from the disk cache when this exact request has been answered before."""
+    key = request_key({"messages": messages, "tools": tools, "model": model, "backend": backend, "think": think,
+                       "seed": SEED, "num_ctx": CONTEXT_LENGTH,
+                       "max_output_tokens": THINKING_OUTPUT_TOKENS if think and backend == "openrouter" else MAX_OUTPUT_TOKENS,
+                       "hosted_provider": HOSTED_PROVIDER if backend == "openrouter" else ""})
+    try:
+        stored = json.loads(stored_reply(key))
+        seconds = stored.pop("seconds")
+        cache_activity.cached_calls = getattr(cache_activity, "cached_calls", 0) + 1
+        cache_activity.cached_seconds = getattr(cache_activity, "cached_seconds", 0.0) + seconds
+        return ChatTurn(**stored)
+    except KeyError:
+        pass
+    started = time.time()
+    turn = request_reply(messages, tools, model, backend, think)
+    store_reply(key, {**dataclasses.asdict(turn), "seconds": round(time.time() - started, 2)})
+    return turn
+
+
+def request_reply(messages: list[dict], tools: list[dict] | None, model: str, backend: str, think: bool) -> ChatTurn:
     if backend == "ollama":
         wait_for_resources(model)
         body = {"model": model, "messages": ollama_messages(messages), "stream": False, "think": think,
-                "options": {"temperature": 0, "seed": SEED, "num_ctx": CONTEXT_LENGTH,
+                "keep_alive": LOADED_MODEL_KEEP_ALIVE, "options": {"temperature": 0, "seed": SEED, "num_ctx": CONTEXT_LENGTH,
                             "num_predict": MAX_OUTPUT_TOKENS}}
         if tools:
             body["tools"] = tools
@@ -148,13 +211,12 @@ def chat(messages: list[dict], tools: list[dict] | None = None, model: str = DEF
         return ChatTurn(message.get("content") or "", calls, data.get("prompt_eval_count", 0),
                         data.get("eval_count", 0), "ollama", message.get("thinking") or "")
     if backend == "openrouter":
-        body = {"model": model, "messages": openai_messages(messages), "temperature": 0, "seed": SEED}
+        body = {"model": model, "messages": openai_messages(messages), "temperature": 0, "seed": SEED,
+                "max_tokens": THINKING_OUTPUT_TOKENS if think else MAX_OUTPUT_TOKENS, "reasoning": {"enabled": think},
+                "provider": {"order": [HOSTED_PROVIDER], "allow_fallbacks": False}}
         if tools:
             body["tools"] = tools
-        response = httpx.post(OPENROUTER_URL, json=body, timeout=600,
-                              headers={"Authorization": f"Bearer {read_openrouter_key()}"})
-        response.raise_for_status()
-        data = response.json()
+        data = post_to_openrouter(body)
         message = data["choices"][0]["message"]
         calls = []
         for c in message.get("tool_calls") or []:
@@ -165,5 +227,6 @@ def chat(messages: list[dict], tools: list[dict] | None = None, model: str = DEF
             calls.append({"id": c["id"], "name": c["function"]["name"], "arguments": arguments})
         usage = data.get("usage") or {}
         return ChatTurn(message.get("content") or "", calls, usage.get("prompt_tokens", 0),
-                        usage.get("completion_tokens", 0), data.get("provider", "openrouter"))
+                        usage.get("completion_tokens", 0), data.get("provider") or HOSTED_PROVIDER,
+                        message.get("reasoning") or "")
     raise ValueError(f"unknown backend: {backend}")

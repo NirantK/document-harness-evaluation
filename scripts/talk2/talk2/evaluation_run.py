@@ -3,11 +3,13 @@
 import json
 import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 import time
 from pathlib import Path
 
 from talk2.corpus_assembly import CORPUS_NAME, CORPUS_PDF, EVAL_ROOT, REPOSITORY_ROOT
-from talk2.model_client import DEFAULT_MODEL, unload_model
+from talk2.model_client import (DEFAULT_MODEL, HOSTED_PROVIDER, SEED, HOSTED_QUANTIZATION, LOCAL_QUANTIZATION, cache_activity,
+                                release_memory_if_short)
 from talk2.scoring import load_questions, score
 
 # configuration -> (input corpus, retrieval method). The first four are the frozen configurations; text_hybrid,
@@ -34,7 +36,9 @@ CONFIGURATIONS = {
     "merged_grep_revision2": ("markdown_merged", "grep_revision2"),
     "merged_grep_revision2_thinking": ("markdown_merged", "grep_revision2_thinking"),
     "merged_grep_revision3": ("markdown_merged", "grep_revision3"),
+    "merged_grep_revision3_with_review": ("markdown_merged", "grep_revision3_with_review"),
     "merged_grep_revision3_thinking": ("markdown_merged", "grep_revision3_thinking"),
+    "text_grep_revision3": ("text", "grep_revision3"),
 }
 RUNS_ROOT = EVAL_ROOT / "runs"
 CONVERTER_ID = "lightonocr-3-0.8b"
@@ -42,7 +46,12 @@ MODEL_LABELS = {DEFAULT_MODEL: "qwen3.6-35b-a3b", "gemma4:26b": "gemma4-26b-a4b"
                 "gemma4:12b-it-q4_K_M": "gemma4-12b-q4"}
 
 
+HOSTED_MODEL = "qwen/qwen3.5-9b"
+
+
 def model_label(model: str) -> str:
+    if model == HOSTED_MODEL:
+        return f"qwen3.5-9b-{HOSTED_QUANTIZATION[HOSTED_PROVIDER]}-{HOSTED_PROVIDER.lower()}"
     return MODEL_LABELS.get(model) or re.sub(r"[^a-z0-9.]+", "-", model.lower().split("/")[-1]).strip("-")
 
 
@@ -61,7 +70,8 @@ def completed_run(configuration: str, repeat: int, model: str) -> Path | None:
     return None
 
 
-def run_configuration(configuration: str, repeat: int, model: str, backend: str, corpus_override: str = "") -> Path:
+def run_configuration(configuration: str, repeat: int, model: str, backend: str, corpus_override: str = "",
+                      workers: int = 1) -> Path:
     if configuration not in CONFIGURATIONS:
         raise ValueError(f"configuration must be one of {CONFIGURATIONS}")
     corpus, retrieval = CONFIGURATIONS[configuration]
@@ -83,15 +93,17 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
 
         structured_tools = StructuredCorpusTools(CORPUS_PDF.parent / corpus, ".md", show_long_lines=True)
     elif retrieval.startswith(("grep_structured", "grep_revision")):
+        from talk2 import structured_agent
         from talk2.structured_agent import REVISION_1, REVISION_2, REVISION_2_THINKING, REVISION_3, REVISION_3_THINKING
         from talk2.structured_agent import answer_question as structured_answer
         from talk2.structured_tools import StructuredCorpusTools
 
-        structured_tools = StructuredCorpusTools(CORPUS_PDF.parent / corpus, ".md",
+        structured_tools = StructuredCorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md",
                                                  show_long_lines=retrieval != "grep_structured")
         revision = {"grep_structured": REVISION_1, "grep_revision2": REVISION_2,
                     "grep_revision2_thinking": REVISION_2_THINKING, "grep_revision3": REVISION_3,
-                    "grep_revision3_thinking": REVISION_3_THINKING}[retrieval]
+                    "grep_revision3_thinking": REVISION_3_THINKING,
+                    "grep_revision3_with_review": structured_agent.REVISION_3_WITH_REVIEW}[retrieval]
     else:
         from talk2.harness_agent import SessionMemory, answer_question as harness_answer
         from talk2.harness_tools import CorpusTools
@@ -99,33 +111,44 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         tools = CorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md")
         memory = SessionMemory() if retrieval == "grep_memory" else None
 
+    def answer(question: dict) -> dict:
+        cache_activity.cached_calls, cache_activity.cached_seconds = 0, 0.0
+        try:
+            if retrieval in ("embedding", "embedding_thinking", "hybrid"):
+                result = rag_answer(question["question"], retriever, model, backend,
+                                    think=retrieval.endswith("_thinking"))
+            elif retrieval.startswith("grep_fanout"):
+                result = fanout_answer(question, structured_tools, model, backend,
+                                       think=retrieval.endswith("_thinking"))
+            elif retrieval.startswith(("grep_structured", "grep_revision")):
+                result = structured_answer(question, structured_tools, model, backend, revision)
+            else:
+                result = harness_answer(question, tools, model, backend, memory)
+            result["score"] = score(question, result["response"])
+        except Exception as error:  # a failed question is logged as incorrect, the run continues
+            result = {"error": f"{type(error).__name__}: {error}", "response": {},
+                      "score": {"correct": False, "detail": "error"}}
+        if backend == "ollama":
+            release_memory_if_short(model)
+        result["cached_model_calls"] = getattr(cache_activity, "cached_calls", 0)
+        result["cached_seconds"] = round(getattr(cache_activity, "cached_seconds", 0.0), 1)
+        print(f"{configuration} r{repeat} #{question['order']} {question['id']}: "
+              f"{'CORRECT' if result['score']['correct'] else 'wrong'} "
+              f"answer={str(result['response'].get('answer', result.get('error', '')))[:90]!r}", flush=True)
+        return result
+
+    revision_id = git_revision()
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(answer, questions))
     with output.open("w") as handle:
-        for question in questions:
-            try:
-                if retrieval in ("embedding", "embedding_thinking", "hybrid"):
-                    result = rag_answer(question["question"], retriever, model, backend,
-                                        think=retrieval.endswith("_thinking"))
-                elif retrieval.startswith("grep_fanout"):
-                    result = fanout_answer(question, structured_tools, model, backend,
-                                           think=retrieval.endswith("_thinking"))
-                elif retrieval.startswith(("grep_structured", "grep_revision")):
-                    result = structured_answer(question, structured_tools, model, backend, revision)
-                else:
-                    result = harness_answer(question, tools, model, backend, memory)
-                result["score"] = score(question, result["response"])
-            except Exception as error:  # a failed question is logged as incorrect, the run continues
-                result = {"error": f"{type(error).__name__}: {error}", "response": {},
-                          "score": {"correct": False, "detail": "error"}}
+        for question, result in zip(questions, results):
             record = {"order": question["order"], "id": question["id"], "configuration": configuration,
                       "corpus": corpus, "retrieval": retrieval, "repeat": repeat, "model": model, "backend": backend,
                       "converter": {"markdown": CONVERTER_ID, "markdown_merged": f"{CONVERTER_ID}+text-layer-residue"}.get(
                           corpus, "pymupdf-get_text"),
-                      "corpus_name": CORPUS_NAME, "git_revision": git_revision(), **result}
+                      "corpus_name": CORPUS_NAME, "git_revision": revision_id, "seed": SEED,
+                      "quantization": HOSTED_QUANTIZATION[HOSTED_PROVIDER] if backend == "openrouter" else LOCAL_QUANTIZATION
+                      if model == "qwen3.5:9b" else "", "hosted_provider": HOSTED_PROVIDER if backend == "openrouter" else "",
+                      **result}
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-            handle.flush()
-            if backend == "ollama":
-                unload_model(model)
-            print(f"{configuration} r{repeat} #{question['order']} {question['id']}: "
-                  f"{'CORRECT' if result['score']['correct'] else 'wrong'} "
-                  f"answer={str(result['response'].get('answer', result.get('error', '')))[:90]!r}", flush=True)
     return output

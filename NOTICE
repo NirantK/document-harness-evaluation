@@ -9,5 +9,7 @@ The Apache licence does not cover the third-party documents and benchmark data t
   selected pages from documents whose terms permit redistribution; the index file names each licence.
 - XL-DocBench (arXiv 2608.00036). Its release grants no redistribution rights for third-party PDFs, so neither its PDFs
   nor its question text appear here. The index file links each original source.
+- US Department of Defense documents, Distribution Statement A (approved for public release). PDFs under docs/files/us-dod
+  are extracts of MIL-STD-810H Method 516.8 and Technical Order 00-25-172CL-3.
 
 docs/files/document_index.tsv lists every document, its licence and its source.

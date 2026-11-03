@@ -2,6 +2,7 @@
 
 import re
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 from talk2.harness_tools import OUTPUT_LIMIT, CorpusTools
@@ -41,7 +42,19 @@ READ = {"type": "function", "function": {
         "page": {"type": "integer", "description": "A number from a <!-- page N --> marker. Replaces start_line."},
     }, "required": ["path"]}}}
 
+READ_SEVERAL_PAGES = {"type": "function", "function": {
+    "name": "read",
+    "description": (f"Read one file by line range (default {DEFAULT_READ_LINES} lines), one whole page, or several pages "
+                    "in one call. Line numbers come from search or outline, never from a printed table of contents."),
+    "parameters": {"type": "object", "properties": {
+        "path": {"type": "string"}, "start_line": {"type": "integer"}, "line_count": {"type": "integer"},
+        "page": {"type": "integer", "description": "A number from a <!-- page N --> marker. Replaces start_line."},
+        "pages": {"type": "array", "items": {"type": "integer"},
+                  "description": "Several numbers from <!-- page N --> markers, read together in one call."},
+    }, "required": ["path"]}}}
+
 TOOL_DEFINITIONS = [SEARCH, OUTLINE, READ]
+TOOL_DEFINITIONS_SEVERAL_PAGES = [SEARCH, OUTLINE, READ_SEVERAL_PAGES]
 
 
 class StructuredCorpusTools(CorpusTools):
@@ -55,6 +68,7 @@ class StructuredCorpusTools(CorpusTools):
         return "\n".join(f"{r['path']} | {r['title'][:110]} | {r['language']} | {r['pages']} pages"
                          for r in self.catalogue)
 
+    @lru_cache(maxsize=256)
     def file_lines(self, path: str) -> list[str] | None:
         resolved = self.resolve(path)
         return resolved.read_text(errors="replace").splitlines() if resolved else None
@@ -91,6 +105,7 @@ class StructuredCorpusTools(CorpusTools):
         excerpts = " ... ".join(text[start:end] for start, end in spans)
         return f"{excerpts} [excerpts of a {len(text)}-character line]"
 
+    @lru_cache(maxsize=4096)
     def search(self, pattern: str, file: str = "", mode: str = "lines") -> str:
         if file and self.resolve(file) is None:
             return f"No file '{file}'. Omit file to search everything, or use an exact path from the catalogue."

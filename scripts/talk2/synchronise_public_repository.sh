@@ -16,6 +16,14 @@ for corpus in pages_multihop pages_holdout pages_holdout2 pages_unseen scanned_d
   done
 done
 [[ -f $REPOSITORY/eval/talk2/method.md ]] && cp $REPOSITORY/eval/talk2/method.md $TARGET/eval/talk2/
+for measurement in vector_search conversion_comparison; do
+  [[ -d $REPOSITORY/eval/talk2/$measurement ]] || continue
+  mkdir -p $TARGET/eval/talk2/$measurement
+  find $REPOSITORY/eval/talk2/$measurement -maxdepth 1 -type f \( -name '*.md' -o -name '*.tsv' \) -exec cp {} $TARGET/eval/talk2/$measurement/ \;
+done
 # GitHub Pages serves these PDFs inline, so a link ending in #page=N opens at that page.
 rsync -a --delete --include '*/' --include '*.pdf' --include 'document_index.tsv' --exclude '*' \
   $REPOSITORY/data/hf_talk2_harness_evaluation/public/files/ $TARGET/docs/files/
+# MIL-STD-810H and the technical order are US Department of Defense documents approved for public release.
+mkdir -p $TARGET/docs/files/us-dod
+cp $REPOSITORY/data/talk2_corpus_scanned_demonstration/pdf/us-dod/*.pdf $TARGET/docs/files/us-dod/

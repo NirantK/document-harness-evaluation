@@ -105,7 +105,8 @@ def build_index(corpus: str = typer.Option("text", help="text (PyMuPDF baseline)
 def run(configuration: str = typer.Option(..., help="rag | markdown_rag | markdown_grep | markdown_grep_memory | text_hybrid | markdown_hybrid | text_grep"),
         repeats: int = 3, first_repeat: int = 1, model: str = DEFAULT_MODEL, backend: str = "ollama",
         resume: bool = typer.Option(False, help="Skip a repeat that already has a complete log"),
-        corpus_override: str = typer.Option("", help="Development only: run a configuration on another corpus")) -> None:
+        corpus_override: str = typer.Option("", help="Development only: run a configuration on another corpus"),
+        workers: int = typer.Option(1, help="Questions answered at once; above 1 only with a hosted backend")) -> None:
     """Answer the ten frozen questions in fixed order; one JSONL log per repeat under eval/talk2/runs."""
     from talk2.evaluation_run import completed_run, run_configuration
 
@@ -114,7 +115,7 @@ def run(configuration: str = typer.Option(..., help="rag | markdown_rag | markdo
         if existing:
             typer.echo(f"already complete {existing}")
             continue
-        typer.echo(f"wrote {run_configuration(configuration, repeat, model, backend, corpus_override)}")
+        typer.echo(f"wrote {run_configuration(configuration, repeat, model, backend, corpus_override, workers)}")
 
 
 @application.command()

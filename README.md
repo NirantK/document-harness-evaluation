@@ -2,8 +2,10 @@
 
 Code and method behind the talk **Better Harness, Better Answers: Document Intelligence Without Bigger Models**.
 
-One small local model stays fixed. Every run uses `qwen3.5:9b` in Ollama at temperature 0 and seed 42. Only the harness
-around it changes, and every change is scored on the same questions.
+One small model stays fixed: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
+`qwen/qwen3.5-9b`, seeds 42 to 44. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, seed 42. Every run log names its
+model, quantization, provider and seed. Only the harness around the model changes, and every change is scored on the same
+questions. Embeddings and page conversion stay local in Ollama.
 
 ## The three components
 
@@ -31,6 +33,9 @@ Questions, per-page Markdown and answer logs are on Hugging Face:
 ```bash
 cd scripts/talk2
 uv sync
+# Hosted, fp4 on Darkbloom, 20 questions in about two minutes; needs OPENROUTER_API_KEY
+TALK2_CORPUS=pages_multihop uv run talk2 run --configuration merged_grep_revision3 --repeats 1 --model qwen/qwen3.5-9b --backend openrouter --workers 10
+# Local, nvfp4 in Ollama, about 40 minutes
 TALK2_CORPUS=pages_multihop uv run talk2 run --configuration merged_grep_revision3 --repeats 1 --model qwen3.5:9b
 uv run talk2 report
 ```

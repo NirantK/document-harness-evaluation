@@ -190,6 +190,8 @@ def build_answers() -> list[dict]:
                     response = record.get("response") or {}
                     rows.append({
                         "corpus": corpus, "model": record["model"], "configuration": record["configuration"],
+                        "quantization": record.get("quantization") or ("nvfp4" if record["model"] == "qwen3.5:9b" else ""),
+                        "hosted_provider": record.get("hosted_provider") or "", "seed": record.get("seed") or 42,
                         "repeat": record["repeat"], "question_id": record["id"], "question_source": questions[record["id"]]["source"],
                         "answer": str(response.get("answer", "")), "files": json.dumps(response.get("files", [])),
                         "correct": bool(score(questions[record["id"]], response)["correct"]),
@@ -266,14 +268,14 @@ configs:
 
 # Talk 2 Harness Evaluation
 
-Data behind the talk "Better Harness, Better Answers". One local model answered the same questions under different
+Data behind the talk "Better Harness, Better Answers". One small model answered the same questions under different
 harnesses, and every answer, score and tool call is here. Variant: **{variant}**.
 
 | Config | Rows | Content |
 | --- | ---: | --- |
 | questions | {question_count} | Question, gold answer, scoring rule, evidence pages. Splits follow the evaluation stages. |
 | pages | {page_count} | Page image, converted Markdown, source URL, licence, the questions that selected the page. |
-| answers | {answer_count} | Model, configuration, repeat, answer, score, tool calls, seconds, tokens, full tool trace. |
+| answers | {answer_count} | Model, quantization, provider, seed, configuration, repeat, answer, score, tool calls, seconds, tokens, full tool trace. |
 
 ## Evaluation stages
 
@@ -290,7 +292,9 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
 - Vector search: FAISS `IndexFlatIP`, an exact inner-product search over all chunks, top 5.
 - BM25: bm25s. Hybrid fuses the top 20 of each ranking by reciprocal rank fusion (k = 60) and keeps 5.
 - Page conversion: `maternion/LightOnOCR-3:0.8b` for pages with charts, images or little text, pymupdf4llm otherwise.
-- Answer model: `qwen3.5:9b`, temperature 0, seed 42.
+- Answer model: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
+  `qwen/qwen3.5-9b`, seeds 42 to 44. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, seed 42. Each row of `answers`
+  names its `model`, `quantization`, `hosted_provider` and `seed`.
 
 ## Files
 
