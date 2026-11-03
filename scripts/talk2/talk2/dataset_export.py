@@ -1,8 +1,8 @@
 """Write the Hugging Face dataset of the talk: questions, pages and answers, in a full and a public variant.
 
 full:   everything, for local use. Not for publication, because some documents do not permit redistribution.
-public: holds page images and text only for documents whose licence permits redistribution. XL-DocBench questions
-        and restricted page text are replaced by identifiers that resolve_xl_docbench.py fills from the source.
+public: holds every question, gold answer, scoring rule, quote, model answer and score. Page images, page text and tool
+        output appear only for documents whose licence permits redistribution.
 """
 
 import csv
@@ -161,7 +161,7 @@ def build_questions() -> list[dict]:
                 "evidence_documents": json.dumps(question.get("evidence_docs", [])),
                 "evidence_pages": json.dumps(question.get("evidence_subset_pages", [])),
                 "verified_quote": question.get("verified_quote") or "", "difficulty": question.get("difficulty") or "",
-                "domain": question.get("domain") or "", "text_withheld": False})
+                "domain": question.get("domain") or ""})
     return list(rows.values())
 
 
@@ -204,33 +204,20 @@ def build_answers() -> list[dict]:
     return rows
 
 
-def public_question(row: dict) -> dict:
-    if row["source"] == "xl-docbench":
-        return {**row, "question": "", "gold": "", "match": "", "verified_quote": "", "text_withheld": True}
-    if row["source"] == "vidore-finance_fr":
-        return {**row, "verified_quote": ""}
-    return row
-
-
-def public_step(step: dict, withheld: bool) -> dict:
-    """Keep the shape of a trace step, without text that may reproduce a restricted document."""
+def public_step(step: dict) -> dict:
+    """Keep each trace step whole, except tool output and prompts that may reproduce a restricted document."""
     arguments = json.dumps(step.get("arguments"), ensure_ascii=False)
-    restricted = withheld or any(prefix in arguments for prefix in RESTRICTED_PATH_PREFIXES)
-    kept = {key: step[key] for key in ("tool", "step", "arguments") if key in step}
-    if withheld and step.get("tool") == "final_answer":
-        kept["arguments"] = OMITTED
-    for key in ("output", "reply", "prompt"):
+    restricted = any(prefix in arguments for prefix in RESTRICTED_PATH_PREFIXES)
+    kept = {key: step[key] for key in ("tool", "step", "arguments", "reply") if key in step}
+    for key in ("output", "prompt"):
         if key in step:
             text = str(step[key])
-            hidden = restricted or any(prefix in text for prefix in RESTRICTED_PATH_PREFIXES)
-            kept[key] = OMITTED if hidden else text
+            kept[key] = OMITTED if restricted or any(prefix in text for prefix in RESTRICTED_PATH_PREFIXES) else text
     return kept
 
 
 def public_answer(row: dict) -> dict:
-    withheld = row["question_source"] in ("xl-docbench", "vidore-finance_fr")
-    trace = [public_step(step, withheld) for step in json.loads(row["trace"])]
-    return {**row, "answer": OMITTED if withheld else row["answer"], "trace": json.dumps(trace, ensure_ascii=False)}
+    return {**row, "trace": json.dumps([public_step(step) for step in json.loads(row["trace"])], ensure_ascii=False)}
 
 
 def write_parquet(rows: list[dict], path: Path, image_column: str = "") -> None:
@@ -315,44 +302,17 @@ lists every document with its source URL, including those not hosted here. `page
 - CUAD, The Atticus Project, CC BY 4.0, DOI 10.5281/zenodo.4595826. Contracts come from EDGAR.
 - ViDoRe v3, annotations CC BY 4.0, arXiv 2601.08620. Each document has its own licence in the `licence` column. INSEE
   documents: "Source : Insee".
-- XL-DocBench, Microsoft, arXiv 2608.00036. The benchmark lists links and grants no redistribution rights for documents.
+- XL-DocBench, Microsoft, arXiv 2608.00036. Questions and answers come from the benchmark; it lists links to documents and grants no redistribution rights for them.
 
 This card is a practical summary and not legal advice.
 """
 
 FULL_NOTES = "## Variant notes\n\nThis full variant is for local use only. It contains documents that do not permit redistribution."
-PUBLIC_NOTES = ("## Variant notes\n\nPages with `redistribution` other than `permitted` are excluded. XL-DocBench question text, gold "
-                "answers and scoring rules are withheld (`text_withheld`), and `resolve_xl_docbench.py` fills question text "
-                "and the benchmark answer by `id` from microsoft/XL-DocBench. The current release lacks five of these questions, "
-                "four of them in `unseen`, and the script names them. Answers to questions on restricted documents and "
-                "tool outputs that touch them read `" + OMITTED + "`. Scores, call counts, seconds and tokens stay.")
-
-RESOLVER = '''"""Fill withheld XL-DocBench question text from the source benchmark. Usage: python resolve_xl_docbench.py"""
-import json
-from urllib.request import urlopen
-
-import pyarrow.parquet as parquet
-
-BASE = "https://huggingface.co/datasets/microsoft/XL-DocBench/resolve/main/data/"
-source = {}
-for name in ("qa_single_doc.jsonl", "qa_cross_doc.jsonl"):
-    for line in urlopen(BASE + name):
-        row = json.loads(line)
-        source[row["question_id"]] = row
-for path_name in ("rag_misses", "multi_hop", "holdout", "holdout2", "unseen"):
-    try:
-        rows = parquet.read_table(f"questions/{path_name}.parquet").to_pylist()
-    except FileNotFoundError:
-        continue
-    missing = [row["id"] for row in rows if row["text_withheld"] and row["id"] not in source]
-    if missing:
-        print(f"{path_name}: not in the current XL-DocBench release: {', '.join(missing)}")
-    for row in rows:
-        if row["text_withheld"] and row["id"] in source:
-            row["question"], row["gold"] = source[row["id"]]["question"], str(source[row["id"]]["answer"]["value"])
-    with open(f"questions_{path_name}_resolved.jsonl", "w") as handle:
-        handle.writelines(json.dumps(row, ensure_ascii=False) + "\\n" for row in rows)
-'''
+PUBLIC_NOTES = ("## Variant notes\n\nEvery question, gold answer, scoring rule, evidence quote, model answer and score is here. Five "
+                "XL-DocBench questions, four of them in `unseen`, come from an earlier release of that benchmark. Pages with "
+                "`redistribution` other than `permitted` are excluded, because their source licences do not allow copies; "
+                "`source_url` and `open_page_url` lead to them. Tool outputs and prompts that reproduce those documents read `"
+                + OMITTED + "`.")
 
 
 def write_variant(variant: str, questions: list[dict], pages: list[dict], answers: list[dict]) -> dict:
@@ -366,8 +326,6 @@ def write_variant(variant: str, questions: list[dict], pages: list[dict], answer
     (root / "README.md").write_text(CARD.format(
         question_splits=split_lines, variant=variant, question_count=len(questions), page_count=len(pages),
         answer_count=len(answers), variant_notes=FULL_NOTES if variant == "full" else PUBLIC_NOTES))
-    if variant == "public":
-        (root / "resolve_xl_docbench.py").write_text(RESOLVER)
     return {"questions": len(questions), "pages": len(pages), "answers": len(answers)}
 
 
@@ -379,7 +337,7 @@ def export_dataset(corpus: str) -> dict:
     answers = build_answers()
     public_pages = [row for row in pages if row["redistribution"] == PERMITTED]
     summary = {"full": write_variant("full", questions, pages, answers),
-               "public": write_variant("public", [public_question(r) for r in questions], public_pages,
+               "public": write_variant("public", questions, public_pages,
                                        [public_answer(r) for r in answers])}
     summary["public"]["files"] = write_document_files(corpus, licences, OUTPUT_ROOT / "public")
     return summary
