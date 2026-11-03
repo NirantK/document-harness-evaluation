@@ -114,6 +114,8 @@ class AgentRevision:
     keep_reviewed_answer: bool = False
     report_term_counts: bool = False
     review_step: bool = True
+    # False removes the guidance from an empty search result, which measures what that guidance contributes.
+    empty_result_hint: bool = True
 
 
 REVISION_1 = AgentRevision()
@@ -128,6 +130,8 @@ REVISION_3 = AgentRevision(final_answer_tool=True, stop_after_refused_turns=2, r
 REVISION_3_WITH_REVIEW = dataclasses.replace(REVISION_3, review_step=True)
 # Display name: Thinking. Configuration merged_grep_revision3_thinking.
 REVISION_3_THINKING = dataclasses.replace(REVISION_3, think=True)
+# Measurement only: Improving Speed with empty search results reduced to the bare count. Not a candidate configuration.
+REVISION_3_BARE_EMPTY_RESULT = dataclasses.replace(REVISION_3, report_term_counts=False, empty_result_hint=False)
 FINAL_ANSWER = {"type": "function", "function": {
     "name": "final_answer",
     "description": "Submit the answer once the lines you have read support it. This ends the search.",
@@ -328,6 +332,8 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
                     refused_in_turn = True
                     if revision.refused_calls_are_free:
                         tool_calls_made -= 1
+                if not revision.empty_result_hint and call["name"] == "search" and output.startswith("0 matches"):
+                    output = output.split(" This does not yet show absence.")[0]
                 if revision.report_term_counts and call["name"] == "search" and output.startswith("0 matches"):
                     output += term_counts_note(str(arguments.get("pattern", "")),
                                                str(arguments.get("file") or arguments.get("path") or ""), tools)

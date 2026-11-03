@@ -12,7 +12,8 @@ MODEL_NOTE = "Qwen3.5-9B, 4-bit (fp4), Darkbloom through OpenRouter (`qwen/qwen3
 ROWS = [("RAG, embedding", "merged_rag"), ("RAG, embedding, thinking", "merged_rag_thinking"), ("RAG, hybrid", "merged_hybrid"),
         ("Grep, single fan-out", "merged_grep_fanout"), ("Grep, single fan-out, thinking", "merged_grep_fanout_thinking"),
         ("Grep, agentic search", "merged_grep"), ("Improving Correctness", "merged_grep_revision2"), ("Improving Speed", "merged_grep_revision3"),
-        ("Thinking", "merged_grep_revision3_thinking")]
+        ("Thinking", "merged_grep_revision3_thinking"),
+        ("Improving Speed, hint removed", "merged_grep_revision3_bare_empty_result")]
 
 
 def complete_runs(configuration: str, question_count: int) -> dict[int, list[dict]]:

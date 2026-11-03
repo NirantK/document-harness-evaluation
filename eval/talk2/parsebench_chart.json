@@ -1,0 +1,41 @@
+{
+  "group": "chart",
+  "pages": 568,
+  "ollama_converter_setting": "at most 2 megapixels, 200 DPI, grounding prompt",
+  "profiles": {
+    "lightonocr_3_ollama_talk2": {
+      "note": "maternion/LightOnOCR-3:0.8b in Ollama",
+      "successful": 568,
+      "failed": 0,
+      "average_latency_ms": 61422.61,
+      "aggregate_metrics": {
+        "avg_rule_pass_rate": 0.5830475275897812,
+        "min_rule_pass_rate": 0.0,
+        "max_rule_pass_rate": 1.0,
+        "avg_rule_chart_data_point_pass_rate": 0.5830475275897812,
+        "min_rule_chart_data_point_pass_rate": 0.0,
+        "max_rule_chart_data_point_pass_rate": 1.0,
+        "total_rule_pass_rate_passed": 2680.0,
+        "total_rule_pass_rate_evaluated": 4864.0,
+        "micro_rule_pass_rate": 0.5509868421052632
+      }
+    },
+    "pymupdf4llm_markdown": {
+      "note": "pymupdf4llm 2.1, no OCR; the talk corpus was converted with 2.0",
+      "successful": 489,
+      "failed": 79,
+      "average_latency_ms": 197.13,
+      "aggregate_metrics": {
+        "avg_rule_pass_rate": 0.01056338028169014,
+        "min_rule_pass_rate": 0.0,
+        "max_rule_pass_rate": 1.0,
+        "avg_rule_chart_data_point_pass_rate": 0.01056338028169014,
+        "min_rule_chart_data_point_pass_rate": 0.0,
+        "max_rule_chart_data_point_pass_rate": 1.0,
+        "total_rule_pass_rate_passed": 26.0,
+        "total_rule_pass_rate_evaluated": 4864.0,
+        "micro_rule_pass_rate": 0.005345394736842105
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@
 | Improving Correctness | `merged_grep_revision2` | 7, 6, 7 | 13 | 138.2k |
 | Improving Speed | `merged_grep_revision3` | 8, 7, 8 | 13 | 98.1k |
 | Thinking | `merged_grep_revision3_thinking` | 11, 8, 8 | 11 | 94.5k |
+| Improving Speed, hint removed | `merged_grep_revision3_bare_empty_result` | 6, 9, 9 | 12 | 98.1k |
 
 ## Notes
 
@@ -35,3 +36,19 @@
 | merged_grep_revision2 | 5, 4, 5 |
 | merged_grep_revision3 | 5, 5, 6 |
 | merged_grep_revision3_thinking | 9, 6, 5 |
+
+## Empty-result hint
+
+`merged_grep_revision3_bare_empty_result` is Improving Speed with the guidance and term counts removed from empty search results, a
+measurement and not a candidate. Three runs each, Qwen3.5-9B, 4-bit (fp4), Darkbloom through OpenRouter. Totals are off → on.
+
+| Source, set | Answers | Empty searches | Same search repeated | Correct |
+| --- | ---: | ---: | ---: | ---: |
+| ViDoRe, tuning | 15 | 72 → 20 | 23 → 2 | 11 → 13 |
+| CUAD, tuning | 9 | 9 → 8 | 0 → 0 | 9 → 9 |
+| XL-DocBench, tuning | 36 | 26 → 18 | 3 → 3 | 18 → 18 |
+| XL-DocBench, unseen | 60 | 86 → 83 | 0 → 2 | 24 → 23 |
+
+The hint does not raise the score overall. The ViDoRe row covers 5 tuning questions whose traces produced the hint, so it may flatter
+it, and the unseen set holds no ViDoRe questions to confirm it. Three logs from the first tuning attempt lost one question each to a
+network outage; they were set aside and all three runs repeated.

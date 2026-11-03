@@ -38,6 +38,7 @@ CONFIGURATIONS = {
     "merged_grep_revision3": ("markdown_merged", "grep_revision3"),
     "merged_grep_revision3_with_review": ("markdown_merged", "grep_revision3_with_review"),
     "merged_grep_revision3_thinking": ("markdown_merged", "grep_revision3_thinking"),
+    "merged_grep_revision3_bare_empty_result": ("markdown_merged", "grep_revision3_bare_empty_result"),
     "text_grep_revision3": ("text", "grep_revision3"),
 }
 RUNS_ROOT = EVAL_ROOT / "runs"
@@ -103,7 +104,8 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         revision = {"grep_structured": REVISION_1, "grep_revision2": REVISION_2,
                     "grep_revision2_thinking": REVISION_2_THINKING, "grep_revision3": REVISION_3,
                     "grep_revision3_thinking": REVISION_3_THINKING,
-                    "grep_revision3_with_review": structured_agent.REVISION_3_WITH_REVIEW}[retrieval]
+                    "grep_revision3_with_review": structured_agent.REVISION_3_WITH_REVIEW,
+                    "grep_revision3_bare_empty_result": structured_agent.REVISION_3_BARE_EMPTY_RESULT}[retrieval]
     else:
         from talk2.harness_agent import SessionMemory, answer_question as harness_answer
         from talk2.harness_tools import CorpusTools

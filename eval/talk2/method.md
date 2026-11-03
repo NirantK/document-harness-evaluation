@@ -77,7 +77,7 @@ The router was not changed, because that trial covered only the 30 pages it was 
 
 LightOnOCR-3-0.8B (Apache-2.0; ParseBench 74.6 overall, 64.7 on charts) in Ollama, with ParseBench's grounding
 prompt so charts come out as tables (converted from HTML to Markdown tables). Pages are rendered at no more than
-2M pixels and 200 DPI; ParseBench's reference setting is 5M pixels and 400 DPI. Its chart score is re-measured locally with `parse-bench run … --group chart` and saved to
+2M pixels and 200 DPI; ParseBench's reference setting is 5M pixels and 400 DPI. Its chart score, re-measured locally with `parse-bench run … --group chart` on all 568 pages, is 58.3% of data-point rules at this setting; pymupdf4llm alone scores 1.1%. Both are saved in
 `parsebench_chart.json`. A uniform page router applies to every corpus. Pages with fewer than 200 characters of
 text, images covering more than 10% of the page, or 40 or more vector drawings go to the converter; every other page
 goes to `pymupdf4llm` with OCR off. On the full corpus that routes 6,128 of 22,253 pages to the converter, which
