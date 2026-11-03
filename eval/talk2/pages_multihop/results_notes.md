@@ -1,3 +1,5 @@
+Naming: the deck calls revision 2 Improving Correctness and revision 3 Improving Speed; these notes keep the working names that match the log folders.
+
 ## Post-freeze changes
 
 Every change after the `talk2-multihop-frozen` tag:

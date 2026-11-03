@@ -28,7 +28,7 @@ HOSTED_RETRY_ATTEMPTS = 8
 HOSTED_TIMEOUT_SECONDS = 300
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:UD-IQ4_XS"
-SEED = int(os.environ.get("TALK2_SEED", "42"))  # a repeat under another seed measures run-to-run noise
+SEED = int(os.environ.get("TALK2_SEED", "42"))  # sent with every request; at temperature 0 it has little effect, so repeats mostly measure endpoint variation
 CONTEXT_LENGTH = 49152
 # A generation that does not stop held a request open for 30 minutes on 1 Nov while the runner's memory grew.
 MAX_OUTPUT_TOKENS = 4096

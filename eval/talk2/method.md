@@ -72,6 +72,9 @@ Ollama serves every model: the answer model, the embeddings (`qwen3-embedding:0.
 (`maternion/LightOnOCR-3:0.8b`). No other inference engine is used.
 
 ## Converter (DSH step 1)
+Higher resolution did not pay on the 30 highest-loss pages: 4 MP at 300 DPI with the grounding prompt lost 25.2% of text against a 25.8% baseline, at 378 s. A plain OCR prompt at 2 MP lost 19.6% at 95 s.
+The router was not changed, because that trial covered only the 30 pages it was chosen to help and no scored run has used the plain prompt.
+
 LightOnOCR-3-0.8B (Apache-2.0; ParseBench 74.6 overall, 64.7 on charts) in Ollama, with ParseBench's grounding
 prompt so charts come out as tables (converted from HTML to Markdown tables). Pages are rendered at no more than
 2M pixels and 200 DPI; ParseBench's reference setting is 5M pixels and 400 DPI. Its chart score is re-measured locally with `parse-bench run … --group chart` and saved to

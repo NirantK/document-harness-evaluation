@@ -294,8 +294,10 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
 - BM25: bm25s. Hybrid fuses the top 20 of each ranking by reciprocal rank fusion (k = 60) and keeps 5.
 - Page conversion: `maternion/LightOnOCR-3:0.8b` for pages with charts, images or little text, pymupdf4llm otherwise.
 - Answer model: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
-  `qwen/qwen3.5-9b`, seeds 42 to 44. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, seed 42. Each row of `answers`
-  names its `model`, `quantization`, `hosted_provider` and `seed`.
+  `qwen/qwen3.5-9b`, three runs. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, one run. Each row of `answers`
+  names its `model`, `quantization`, `hosted_provider` and the `seed` sent; at temperature 0 the seed has little effect.
+- Iterations: Improving Correctness is configuration `merged_grep_revision2`, Improving Speed is `merged_grep_revision3`, and
+  Thinking is `merged_grep_revision3_thinking`.
 
 ## Files
 
