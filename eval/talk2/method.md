@@ -100,6 +100,7 @@ Borderline auto-scores go to `review.tsv` for a human decision, which `results.m
 - ViDoRe `page_number_in_doc` is 0-based: the PDF page index equals the qrel number.
 - Question 3's gold is read off a bar with no data label (Graph 2.16). The accepted range is 49.5–51.5 EUR because
   the neighbouring ICT bar is about 49.
-- Question 5's answer page (TO 00-25-234, page index 67) has no PDF text layer, and 15 of the document's 226 pages
-  are image-only. Plain RAG over PyMuPDF text cannot see that answer, whatever the retrieval.
+- Question 5's answer page (TO 00-25-234, page index 67) has 724 characters of PDF text, including the answer sentence,
+  which stores "five" with an fi ligature. A plain search for "five" misses that line, and 14 of the document's 226 pages
+  hold no PDF text. Corrected 3 Nov 2026; this note first said the page had no text.
 - Question 8's distractor is real: LVMH's 2023 report gives 48.60 % for the same Arnault family group.
