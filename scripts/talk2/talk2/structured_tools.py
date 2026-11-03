@@ -106,6 +106,10 @@ class StructuredCorpusTools(CorpusTools):
         return f"{excerpts} [excerpts of a {len(text)}-character line]"
 
     @lru_cache(maxsize=4096)
+    def search_from_arguments(self, arguments: dict) -> str:
+        return self.search(pattern=arguments["pattern"], file=arguments.get("file") or arguments.get("path") or "",
+                           mode=arguments.get("mode") or "lines")
+
     def search(self, pattern: str, file: str = "", mode: str = "lines") -> str:
         if file and self.resolve(file) is None:
             return f"No file '{file}'. Omit file to search everything, or use an exact path from the catalogue."

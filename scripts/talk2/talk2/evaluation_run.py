@@ -42,6 +42,11 @@ CONFIGURATIONS = {
     "merged_bm25_loop": ("markdown_merged", "bm25_loop"),
     "merged_bm25_loop_thinking": ("markdown_merged", "bm25_loop_thinking"),
     "merged_fusion_loop": ("markdown_merged", "fusion_loop"),
+    "text_bm25_loop": ("text", "bm25_loop"),
+    "merged_bm25_token_reduction": ("markdown_merged", "bm25_token_reduction"),
+    "merged_bm25_selected_count": ("markdown_merged", "bm25_selected_count"),
+    "merged_bm25_excerpt_fixed_count": ("markdown_merged", "bm25_excerpt_fixed_count"),
+    "merged_bm25_excerpt_selected_count": ("markdown_merged", "bm25_excerpt_selected_count"),
     "text_grep_revision3": ("text", "grep_revision3"),
 }
 RUNS_ROOT = EVAL_ROOT / "runs"
@@ -96,6 +101,19 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         from talk2.structured_tools import StructuredCorpusTools
 
         structured_tools = StructuredCorpusTools(CORPUS_PDF.parent / corpus, ".md", show_long_lines=True)
+    elif retrieval in ("bm25_token_reduction", "bm25_selected_count"):
+        from talk2.ranked_search_tools import RankedStructuredTools
+        from talk2.structured_agent import REVISION_BM25 as revision
+        from talk2.structured_agent import answer_question as structured_answer
+
+        structured_tools = RankedStructuredTools(CORPUS_PDF.parent / corpus, ".md", corpus, selected_count=retrieval == "bm25_selected_count")
+    elif retrieval in ("bm25_excerpt_fixed_count", "bm25_excerpt_selected_count"):
+        from talk2.ranked_search_tools import RankedStructuredTools
+        from talk2.structured_agent import REVISION_BM25_EXCERPT as revision
+        from talk2.structured_agent import answer_question as structured_answer
+
+        structured_tools = RankedStructuredTools(CORPUS_PDF.parent / corpus, ".md", corpus, excerpts=True,
+                                                 selected_count=retrieval == "bm25_excerpt_selected_count")
     elif retrieval.startswith(("grep_structured", "grep_revision")):
         from talk2 import structured_agent
         from talk2.structured_agent import REVISION_1, REVISION_2, REVISION_2_THINKING, REVISION_3, REVISION_3_THINKING
@@ -116,7 +134,7 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
         if retrieval in ("bm25_loop", "bm25_loop_thinking", "fusion_loop"):
             from talk2.ranked_search_tools import RankedCorpusTools
 
-            tools = RankedCorpusTools(CORPUS_PDF.parent / corpus, ".md", corpus, use_embedding=retrieval == "fusion_loop", think=retrieval == "bm25_loop_thinking")
+            tools = RankedCorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md", corpus, use_embedding=retrieval == "fusion_loop", think=retrieval == "bm25_loop_thinking")
         else:
             tools = CorpusTools(CORPUS_PDF.parent / corpus, ".txt" if corpus == "text" else ".md")
         memory = SessionMemory() if retrieval == "grep_memory" else None
@@ -129,7 +147,7 @@ def run_configuration(configuration: str, repeat: int, model: str, backend: str,
             elif retrieval.startswith("grep_fanout"):
                 result = fanout_answer(question, structured_tools, model, backend,
                                        think=retrieval.endswith("_thinking"))
-            elif retrieval.startswith(("grep_structured", "grep_revision")):
+            elif retrieval.startswith(("grep_structured", "grep_revision", "bm25_token_reduction", "bm25_selected_count", "bm25_excerpt")):
                 result = structured_answer(question, structured_tools, model, backend, revision)
             else:
                 result = harness_answer(question, tools, model, backend, memory)

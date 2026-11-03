@@ -287,7 +287,12 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
   Grep Token Reduction + Thinking is `merged_grep_revision3_thinking`.
 - BM25 in the loop (`merged_bm25_loop`), BM25 in the loop + Thinking (`merged_bm25_loop_thinking`) and Hybrid in the loop
   (`merged_fusion_loop`) are the grep agent with a ranked search tool, added after the test scores of the other
-  configurations were known. Hybrid means embedding + BM25 with reciprocal rank fusion, top 5.
+  configurations were known. Hybrid means embedding + BM25 with reciprocal rank fusion, top 5. `text_bm25_loop` is BM25 in
+  the loop on PDF text.
+- BM25 Token Reduction (`merged_bm25_excerpt_fixed_count`) puts BM25 search into the Grep Token Reduction agent, shows an
+  excerpt of 600 characters around the matching words and has no turn limit. `merged_bm25_excerpt_selected_count` lets the
+  model choose the passage count. `merged_bm25_token_reduction` and `merged_bm25_selected_count` are the first versions of
+  these two. All four were tuned on the validation questions and added after the test scores of the others were known.
 
 ## Files
 

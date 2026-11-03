@@ -7,6 +7,7 @@
 | PDF text, RAG, embedding | `rag` | 7, 6, 7 | 1 | 2.4k |
 | PDF text, RAG, hybrid | `text_hybrid` | 7, 7, 7 | 1 | 2.6k |
 | PDF text, grep, agentic search | `text_grep` | 9, 6, 8 | 21 | 134.1k |
+| PDF text, BM25 in the loop | `text_bm25_loop` | 9, 9, 9 | 16 | 171.0k |
 | RAG, embedding | `merged_rag` | 5, 5, 5 | 1 | 2.6k |
 | RAG, embedding, thinking | `merged_rag_thinking` | 8, 7, 5 | 1 | 4.5k |
 | RAG, hybrid | `merged_hybrid` | 7, 7, 6 | 1 | 2.7k |
@@ -20,6 +21,8 @@
 | Grep Token Reduction | `merged_grep_revision3` | 8, 7, 8 | 13 | 98.1k |
 | Grep Token Reduction + Thinking | `merged_grep_revision3_thinking` | 11, 8, 8 | 11 | 94.5k |
 | Grep Token Reduction, hint removed | `merged_grep_revision3_bare_empty_result` | 6, 9, 9 | 12 | 98.1k |
+| BM25 Token Reduction | `merged_bm25_excerpt_fixed_count` | 7, 9, 8 | 11 | 97.3k |
+| BM25 Token Reduction, model-selected count | `merged_bm25_excerpt_selected_count` | 7, 6, 9 | 11.5 | 110.9k |
 
 ## Notes
 
@@ -59,3 +62,4 @@ The hint lowers empty and repeated searches and does not raise the score: valida
 network outage; they were set aside and all three runs repeated.
 
 - BM25 in the loop (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid in the loop (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
+- BM25 Token Reduction (`merged_bm25_excerpt_fixed_count`) puts BM25 search into the Grep Token Reduction agent: each result is a 600-character excerpt around the matching words with its line number, there is no turn limit, and the search stops after 3 refused turns. `merged_bm25_excerpt_selected_count` lets the model choose the passage count, 1 to 10. Both were tuned on the validation questions and added after the test scores of the other rows were known, so this comparison is not a clean holdout. `merged_bm25_token_reduction` and `merged_bm25_selected_count` are their first versions, run on validation only, before that tuning.

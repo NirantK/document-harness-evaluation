@@ -132,6 +132,21 @@ REVISION_3_WITH_REVIEW = dataclasses.replace(REVISION_3, review_step=True)
 REVISION_3_THINKING = dataclasses.replace(REVISION_3, think=True)
 # Measurement only: Token Reduction with empty search results reduced to the bare count. Not a candidate configuration.
 REVISION_3_BARE_EMPTY_RESULT = dataclasses.replace(REVISION_3, report_term_counts=False, empty_result_hint=False)
+# Display name: BM25 Token Reduction. Configurations merged_bm25_token_reduction and merged_bm25_selected_count.
+RANKED_DOMAIN_PROMPT = DOMAIN_PROMPT.replace(
+    """2. Search short terms of one to three words, written as the document would write them. A document in another language
+   needs search terms in that language; translate names and technical terms before searching.""",
+    """2. Search with the words the document would use. search ranks passages by the words they share with the query, so a
+   document in another language needs search terms in that language; translate names and technical terms first.""").replace(
+    """6. When the question asks which documents match, search two or three phrasings with mode="count", then check every
+   candidate file. Stopping at the first hit misses the others.""",
+    """6. When the question asks which documents match, search two or three phrasings, then check every candidate file.
+   Stopping at the first hit misses the others.""")
+REVISION_BM25 = dataclasses.replace(REVISION_3, prompt=RANKED_DOMAIN_PROMPT)
+# Tuned on validation traces: the turn limit and the stop after two refused turns ended searches the BM25 loop completed.
+REVISION_BM25_EXCERPT = dataclasses.replace(REVISION_BM25, turn_limit=0, stop_after_refused_turns=3, prompt=RANKED_DOMAIN_PROMPT.replace(
+    "4. Read around every useful hit. A matching line is rarely the whole answer.",
+    "4. Search shows excerpts. Read around every useful hit from the line shown. A matching line is rarely the whole answer."))
 FINAL_ANSWER = {"type": "function", "function": {
     "name": "final_answer",
     "description": "Submit the answer once the lines you have read support it. This ends the search.",
@@ -190,8 +205,7 @@ def execute_call(call: dict, tools: StructuredCorpusTools, ledger: CallLedger, s
     if earlier is not None:
         return f"You made this exact call at step {earlier}; the result is unchanged. Change the terms or the lines."
     if name == "search":
-        return tools.search(pattern=arguments["pattern"], file=arguments.get("file") or arguments.get("path") or "",
-                            mode=arguments.get("mode") or "lines")
+        return tools.search_from_arguments(arguments)
     if name == "outline":
         return tools.outline(arguments.get("path", ""))
     if name == "read" and "pages" in arguments:
@@ -278,6 +292,9 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
     tool_calls_made = searches = empty_replies = malformed_calls = refused_turns = 0
     tool_definitions = (TOOL_DEFINITIONS_SEVERAL_PAGES if revision.read_several_pages else TOOL_DEFINITIONS) + (
         [FINAL_ANSWER] if revision.final_answer_tool else [])
+    search_definition = getattr(tools, "search_definition", None)
+    if search_definition:
+        tool_definitions = [search_definition if d["function"]["name"] == "search" else d for d in tool_definitions]
     stop_searching = False
     checks_used: set[str] = set()
     accepted: dict | None = None
@@ -323,9 +340,9 @@ def answer_question(question: dict, tools: StructuredCorpusTools, model: str, ba
                 tool_calls_made += 1
                 try:
                     output = execute_call(call, tools, ledger, tool_calls_made)
-                except (KeyError, TypeError, ValueError) as error:
+                except (KeyError, TypeError, ValueError, OSError) as error:
                     parse_failures += 1
-                    output = f"Bad arguments: {error}"
+                    output = f"Bad arguments: {type(error).__name__}"
                 if call["name"] == "read" and arguments.get("path"):
                     files_touched.add(arguments["path"])
                 if output.startswith(REFUSED_PREFIXES):

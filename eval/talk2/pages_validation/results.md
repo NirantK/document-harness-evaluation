@@ -20,7 +20,12 @@
 | Grep Token Reduction | `merged_grep_revision3` | 12, 13, 15 | 7 | 46.9k |
 | Grep Token Reduction + Thinking | `merged_grep_revision3_thinking` | 15, 18, 19 | 7 | 45.5k |
 | Grep Token Reduction, hint removed | `merged_grep_revision3_bare_empty_result` | 15, 15, 15 | 8 | 42.5k |
+| BM25 Token Reduction | `merged_bm25_excerpt_fixed_count` | 16, 17, 17 | 6 | 44.8k |
+| BM25 Token Reduction, model-selected count | `merged_bm25_excerpt_selected_count` | 16, 13, 16 | 6 | 45.6k |
+| BM25 Token Reduction, first version | `merged_bm25_token_reduction` | 12, 17, 11 | 8 | 69.8k |
+| BM25 Token Reduction, model-selected count, first version | `merged_bm25_selected_count` | 13, 13 | 6 | 58.6k |
 
 ## Notes
 
 - BM25 in the loop (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid in the loop (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
+- BM25 Token Reduction (`merged_bm25_excerpt_fixed_count`) puts BM25 search into the Grep Token Reduction agent: each result is a 600-character excerpt around the matching words with its line number, there is no turn limit, and the search stops after 3 refused turns. `merged_bm25_excerpt_selected_count` lets the model choose the passage count, 1 to 10. Both were tuned on the validation questions and added after the test scores of the other rows were known, so this comparison is not a clean holdout. `merged_bm25_token_reduction` and `merged_bm25_selected_count` are their first versions, run on validation only, before that tuning. One run of `merged_bm25_selected_count` lost a question to an `OSError` and is left out of the table.
