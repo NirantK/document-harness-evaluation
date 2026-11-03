@@ -1,4 +1,6 @@
-"""Configurations `merged_bm25_loop` and `merged_fusion_loop`: the grep agent with its search tool replaced.
+"""Configurations `merged_bm25_loop`, `merged_bm25_loop_thinking` and `merged_fusion_loop`: the grep agent with its search tool replaced.
+
+Display names: BM25 in the loop, BM25 in the loop + Thinking, Hybrid in the loop.
 
 The agent loop, the read and list_files tools and the call budget stay those of `merged_grep`. Search takes a query and
 returns the five highest-ranked passages from the chunks plain RAG uses: BM25 alone, or BM25 and embedding merged by
@@ -39,8 +41,9 @@ class RankedCorpusTools(CorpusTools):
     search_parameters = ("query", "path_glob")
     system_prompt = RANKED_SYSTEM_PROMPT
 
-    def __init__(self, root: Path, suffix: str, corpus: str, use_embedding: bool):
+    def __init__(self, root: Path, suffix: str, corpus: str, use_embedding: bool, think: bool = False):
         super().__init__(root, suffix)
+        self.think = think
         self.suffix_text = suffix
         self.use_embedding = use_embedding
         self.retriever = load_hybrid_retriever(corpus)

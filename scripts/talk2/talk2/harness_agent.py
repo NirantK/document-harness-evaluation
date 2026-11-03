@@ -94,7 +94,7 @@ def answer_question(question: dict, tools: CorpusTools, model: str, backend: str
         if use_memory:
             messages[0] = system_message()
             elide_old_tool_outputs(messages)
-        turn = chat(messages, tools=tool_definitions if budget_left else None, model=model, backend=backend)
+        turn = chat(messages, tools=tool_definitions if budget_left else None, model=model, backend=backend, think=tools.think)
         model_calls += 1
         prompt_tokens += turn.prompt_tokens
         completion_tokens += turn.completion_tokens

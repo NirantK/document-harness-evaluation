@@ -57,6 +57,7 @@ class CorpusTools:
     search_definition = SEARCH
     search_parameters = ("pattern", "path_glob", "mode", "fixed_string", "ignore_case", "context")
     system_prompt = None
+    think = False
 
     def __init__(self, root: Path, suffix: str):
         self.root = root

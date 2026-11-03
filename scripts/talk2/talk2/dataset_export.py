@@ -283,10 +283,11 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
 - Answer model: Qwen3.5-9B at temperature 0. Final runs use the 4-bit (fp4) weights on Darkbloom through OpenRouter,
   `qwen/qwen3.5-9b`, three runs. Earlier runs use the nvfp4 weights in Ollama, `qwen3.5:9b`, one run. Each row of `answers`
   names its `model`, `quantization`, `hosted_provider` and the `seed` sent; at temperature 0 the seed has little effect.
-- Iterations: Trace Fixes is configuration `merged_grep_revision2`, Token Reduction is `merged_grep_revision3`, and
-  Thinking is `merged_grep_revision3_thinking`.
-- `merged_bm25_loop` and `merged_fusion_loop` are the grep agent with a ranked search tool, added after the test scores of the
-  other configurations were known.
+- Iterations: Trace Fixes is configuration `merged_grep_revision2`, Grep Token Reduction is `merged_grep_revision3`, and
+  Grep Token Reduction + Thinking is `merged_grep_revision3_thinking`.
+- BM25 in the loop (`merged_bm25_loop`), BM25 in the loop + Thinking (`merged_bm25_loop_thinking`) and Hybrid in the loop
+  (`merged_fusion_loop`) are the grep agent with a ranked search tool, added after the test scores of the other
+  configurations were known. Hybrid means embedding + BM25 with reciprocal rank fusion, top 5.
 
 ## Files
 
