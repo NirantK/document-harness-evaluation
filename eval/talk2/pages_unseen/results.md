@@ -16,7 +16,7 @@
 | Grep agent | `merged_grep` | 7, 9, 7 | 20 | 155.3k |
 | BM25 agent | `merged_bm25_loop` | 9, 8, 10 | 13 | 125.5k |
 | BM25 agent + Thinking | `merged_bm25_loop_thinking` | 10, 6, 5 | 21 | 303.9k |
-| Hybrid in the loop | `merged_fusion_loop` | 8, 9, 10 | 19.5 | 238.5k |
+| Hybrid agent | `merged_fusion_loop` | 8, 9, 10 | 19.5 | 238.5k |
 | Trace Fixes | `merged_grep_revision2` | 7, 6, 7 | 13 | 138.2k |
 | Grep Token Reduction | `merged_grep_revision3` | 8, 7, 8 | 13 | 98.1k |
 | Grep Token Reduction + Thinking | `merged_grep_revision3_thinking` | 11, 8, 8 | 11 | 94.5k |
@@ -61,5 +61,5 @@ measurement and not a candidate. Three runs each, Qwen3.5-9B, 4-bit (fp4), Darkb
 The hint lowers empty and repeated searches and does not raise the score: validation scores 15, 15, 15 without it and 12, 13, 15 with it, on the shared 531 pages. The hint came from the traces of 5 ViDoRe questions on the earlier 222-page corpus. Three logs from the first validation attempt lost one question each to a
 network outage; they were set aside and all three runs repeated.
 
-- BM25 agent (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid in the loop (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
+- BM25 agent (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid agent (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
 - BM25 Token Reduction (`merged_bm25_excerpt_fixed_count`) puts BM25 search into the Grep Token Reduction agent: each result is a 600-character excerpt around the matching words with its line number, there is no turn limit, and the search stops after 3 refused turns. `merged_bm25_excerpt_selected_count` lets the model choose the passage count, 1 to 10. Both were tuned on the validation questions and added after the test scores of the other rows were known, so this comparison is not a clean holdout. `merged_bm25_token_reduction` and `merged_bm25_selected_count` are their first versions, run on validation only, before that tuning.

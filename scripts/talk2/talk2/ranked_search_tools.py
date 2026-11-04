@@ -1,7 +1,7 @@
 """Configurations with a ranked search tool in place of grep.
 
 `merged_bm25_loop`, `merged_bm25_loop_thinking`, `text_bm25_loop` and `merged_fusion_loop` change only the search tool of the
-grep agent. Display names: BM25 agent, BM25 agent + Thinking, BM25 agent on PDF text, Hybrid in the loop.
+grep agent. Display names: BM25 agent, BM25 agent + Thinking, BM25 agent on PDF text, Hybrid agent.
 
 `merged_bm25_excerpt_fixed_count` and `merged_bm25_excerpt_selected_count` put BM25 search into the Grep Token Reduction
 agent, return an excerpt around the matching words of each passage with the line that excerpt starts on, and drop the turn

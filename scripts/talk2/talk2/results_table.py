@@ -13,7 +13,7 @@ ROWS = [("PDF text, RAG, embedding", "rag"), ("PDF text, RAG, hybrid", "text_hyb
         ("RAG, embedding", "merged_rag"), ("RAG, embedding, thinking", "merged_rag_thinking"), ("RAG, hybrid", "merged_hybrid"),
         ("Grep, single fan-out", "merged_grep_fanout"), ("Grep, single fan-out, thinking", "merged_grep_fanout_thinking"),
         ("Grep agent", "merged_grep"), ("BM25 agent", "merged_bm25_loop"), ("BM25 agent + Thinking", "merged_bm25_loop_thinking"),
-        ("Hybrid in the loop", "merged_fusion_loop"), ("Trace Fixes", "merged_grep_revision2"), ("Grep Token Reduction", "merged_grep_revision3"),
+        ("Hybrid agent", "merged_fusion_loop"), ("Trace Fixes", "merged_grep_revision2"), ("Grep Token Reduction", "merged_grep_revision3"),
         ("Grep Token Reduction + Thinking", "merged_grep_revision3_thinking"),
         ("Grep Token Reduction, hint removed", "merged_grep_revision3_bare_empty_result"),
         ("BM25 Token Reduction", "merged_bm25_excerpt_fixed_count"), ("BM25 Token Reduction, model-selected count", "merged_bm25_excerpt_selected_count"),
