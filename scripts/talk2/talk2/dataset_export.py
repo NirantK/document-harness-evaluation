@@ -285,7 +285,7 @@ harnesses, and every answer, score and tool call is here. Variant: **{variant}**
   names its `model`, `quantization`, `hosted_provider` and the `seed` sent; at temperature 0 the seed has little effect.
 - Iterations: Trace Fixes is configuration `merged_grep_revision2`, Grep Token Reduction is `merged_grep_revision3`, and
   Grep Token Reduction + Thinking is `merged_grep_revision3_thinking`.
-- BM25 in the loop (`merged_bm25_loop`), BM25 in the loop + Thinking (`merged_bm25_loop_thinking`) and Hybrid in the loop
+- BM25 agent (`merged_bm25_loop`), BM25 agent + Thinking (`merged_bm25_loop_thinking`) and Hybrid in the loop
   (`merged_fusion_loop`) are the grep agent with a ranked search tool, added after the test scores of the other
   configurations were known. Hybrid means embedding + BM25 with reciprocal rank fusion, top 5. `text_bm25_loop` is BM25 in
   the loop on PDF text.

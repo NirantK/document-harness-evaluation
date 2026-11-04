@@ -143,7 +143,7 @@ RANKED_DOMAIN_PROMPT = DOMAIN_PROMPT.replace(
     """6. When the question asks which documents match, search two or three phrasings, then check every candidate file.
    Stopping at the first hit misses the others.""")
 REVISION_BM25 = dataclasses.replace(REVISION_3, prompt=RANKED_DOMAIN_PROMPT)
-# Tuned on validation traces: the turn limit and the stop after two refused turns ended searches the BM25 loop completed.
+# Tuned on validation traces: the turn limit and the stop after two refused turns ended searches the BM25 agent completed.
 REVISION_BM25_EXCERPT = dataclasses.replace(REVISION_BM25, turn_limit=0, stop_after_refused_turns=3, prompt=RANKED_DOMAIN_PROMPT.replace(
     "4. Read around every useful hit. A matching line is rarely the whole answer.",
     "4. Search shows excerpts. Read around every useful hit from the line shown. A matching line is rarely the whole answer."))

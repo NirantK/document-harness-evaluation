@@ -13,8 +13,8 @@
 | Grep, single fan-out | `merged_grep_fanout` | 6, 6, 7 | 2 | 7.5k |
 | Grep, single fan-out, thinking | `merged_grep_fanout_thinking` | 7, 7, 6 | 2 | 21.5k |
 | Grep agent | `merged_grep` | 16, 17, 14 | 11 | 51.2k |
-| BM25 in the loop | `merged_bm25_loop` | 16, 18, 15 | 9 | 58.4k |
-| BM25 in the loop + Thinking | `merged_bm25_loop_thinking` | 17, 16, 15 | 13.5 | 113.5k |
+| BM25 agent | `merged_bm25_loop` | 16, 18, 15 | 9 | 58.4k |
+| BM25 agent + Thinking | `merged_bm25_loop_thinking` | 17, 16, 15 | 13.5 | 113.5k |
 | Hybrid in the loop | `merged_fusion_loop` | 16, 16, 15 | 7.5 | 49.5k |
 | Trace Fixes | `merged_grep_revision2` | 12, 12, 13 | 11.5 | 125.3k |
 | Grep Token Reduction | `merged_grep_revision3` | 12, 13, 15 | 7 | 46.9k |
@@ -27,5 +27,5 @@
 
 ## Notes
 
-- BM25 in the loop (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid in the loop (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
+- BM25 agent (`merged_bm25_loop`), its thinking variant (`merged_bm25_loop_thinking`) and Hybrid in the loop (`merged_fusion_loop`) fork the plain grep agent (`merged_grep`), changing only the search tool: it returns the five best passages from the chunks plain RAG uses, ranked by BM25 alone or by Hybrid, meaning embedding + BM25 with reciprocal rank fusion, top 5. These were added after the test scores of the other rows were known, with no change made for any question, so this comparison is not a clean holdout.
 - BM25 Token Reduction (`merged_bm25_excerpt_fixed_count`) puts BM25 search into the Grep Token Reduction agent: each result is a 600-character excerpt around the matching words with its line number, there is no turn limit, and the search stops after 3 refused turns. `merged_bm25_excerpt_selected_count` lets the model choose the passage count, 1 to 10. Both were tuned on the validation questions and added after the test scores of the other rows were known, so this comparison is not a clean holdout. `merged_bm25_token_reduction` and `merged_bm25_selected_count` are their first versions, run on validation only, before that tuning. One run of `merged_bm25_selected_count` lost a question to an `OSError` and is left out of the table.
